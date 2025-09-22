@@ -17,8 +17,8 @@ const HeroSection = () => {
   const handleSearch = () => {
     const params = new URLSearchParams();
     if (searchData.location) params.set("location", searchData.location);
-    if (searchData.bedrooms) params.set("bedrooms", searchData.bedrooms);
-    if (searchData.maxRent) params.set("maxRent", searchData.maxRent);
+    if (searchData.bedrooms && searchData.bedrooms !== "any") params.set("bedrooms", searchData.bedrooms);
+    if (searchData.maxRent && searchData.maxRent !== "any") params.set("maxRent", searchData.maxRent);
     
     navigate(`/listings?${params.toString()}`);
   };
@@ -75,7 +75,7 @@ const HeroSection = () => {
                     <SelectValue placeholder="Any" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Any</SelectItem>
+                    <SelectItem value="any">Any</SelectItem>
                     <SelectItem value="1">1+ Bed</SelectItem>
                     <SelectItem value="2">2+ Beds</SelectItem>
                     <SelectItem value="3">3+ Beds</SelectItem>
@@ -94,7 +94,7 @@ const HeroSection = () => {
                     <SelectValue placeholder="Any" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Any</SelectItem>
+                    <SelectItem value="any">Any</SelectItem>
                     <SelectItem value="1000">Up to $1,000</SelectItem>
                     <SelectItem value="2000">Up to $2,000</SelectItem>
                     <SelectItem value="3000">Up to $3,000</SelectItem>

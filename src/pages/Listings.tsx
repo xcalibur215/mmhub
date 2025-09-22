@@ -106,12 +106,12 @@ const Listings = () => {
       );
     }
 
-    if (filters.bedrooms) {
+    if (filters.bedrooms && filters.bedrooms !== "any") {
       const minBedrooms = parseInt(filters.bedrooms);
       filtered = filtered.filter((property) => property.bedrooms >= minBedrooms);
     }
 
-    if (filters.maxRent) {
+    if (filters.maxRent && filters.maxRent !== "any") {
       const maxRent = parseInt(filters.maxRent);
       filtered = filtered.filter((property) => property.monthlyRent <= maxRent);
     }
@@ -122,7 +122,7 @@ const Listings = () => {
         property.monthlyRent <= filters.priceRange[1]
     );
 
-    if (filters.propertyType) {
+    if (filters.propertyType && filters.propertyType !== "any") {
       filtered = filtered.filter((property) => property.propertyType === filters.propertyType);
     }
 
@@ -229,7 +229,7 @@ const Listings = () => {
                       <SelectValue placeholder="Any" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Any</SelectItem>
+                      <SelectItem value="any">Any</SelectItem>
                       <SelectItem value="1">1+ Bedroom</SelectItem>
                       <SelectItem value="2">2+ Bedrooms</SelectItem>
                       <SelectItem value="3">3+ Bedrooms</SelectItem>
@@ -251,7 +251,7 @@ const Listings = () => {
                       <SelectValue placeholder="Any Type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Any Type</SelectItem>
+                      <SelectItem value="any">Any Type</SelectItem>
                       <SelectItem value="Apartment">Apartment</SelectItem>
                       <SelectItem value="House">House</SelectItem>
                       <SelectItem value="Studio">Studio</SelectItem>
