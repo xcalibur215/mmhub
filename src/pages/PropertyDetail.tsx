@@ -24,13 +24,13 @@ const mockProperty = {
   id: "1",
   title: "Modern Downtown Apartment with City Views",
   description: "Beautiful downtown apartment featuring floor-to-ceiling windows with stunning city views. This modern unit includes a fully equipped kitchen with stainless steel appliances, in-unit washer/dryer, and access to building amenities including a fitness center, rooftop deck, and 24/7 concierge service. Perfect for professionals seeking luxury urban living.",
-  monthlyRent: 2400,
-  securityDeposit: 2400,
+  monthlyRent: 32000,
+  securityDeposit: 32000,
   bedrooms: 2,
   bathrooms: 2,
   squareFeet: 1200,
-  location: "Downtown Seattle, WA",
-  fullAddress: "1234 Pine Street, Seattle, WA 98101",
+  location: "Sukhumvit, Bangkok",
+  fullAddress: "123 Sukhumvit Road, Bangkok 10110",
   propertyType: "Apartment",
   listedAt: new Date().toISOString(),
   availableDate: new Date(Date.now() + 2592000000).toISOString(), // 30 days from now
@@ -55,8 +55,8 @@ const mockProperty = {
   contactProfile: {
     name: "Sarah Johnson",
     roleTag: "Property Manager",
-    phone: "(555) 123-4567",
-    email: "sarah.johnson@renthub.com",
+    phone: "+66 2 123 4567",
+    email: "sarah.johnson@mmhub.com",
     profilePicture: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face",
     rating: 4.8,
     reviewCount: 47,
@@ -161,7 +161,7 @@ const PropertyDetail = () => {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-gradient-subtle rounded-lg">
                   <div className="text-center">
                     <div className="text-2xl font-bold text-primary">
-                      ${property.monthlyRent.toLocaleString()}
+                      ฿{property.monthlyRent.toLocaleString()}
                     </div>
                     <div className="text-sm text-muted-foreground">Monthly Rent</div>
                   </div>
@@ -227,7 +227,7 @@ const PropertyDetail = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Security Deposit:</span>
-                      <span className="font-medium">${property.securityDeposit.toLocaleString()}</span>
+                      <span className="font-medium">฿{property.securityDeposit.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Available Date:</span>

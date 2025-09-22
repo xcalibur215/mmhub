@@ -109,12 +109,12 @@ const PropertyCard = ({
             {/* Price */}
             <div className="flex items-baseline justify-between">
               <div className="text-2xl font-bold text-foreground">
-                ${monthlyRent.toLocaleString()}
+                ฿{monthlyRent.toLocaleString()}
                 <span className="text-sm font-normal text-muted-foreground">/month</span>
               </div>
               {securityDeposit && (
                 <div className="text-sm text-muted-foreground">
-                  +${securityDeposit.toLocaleString()} deposit
+                  +฿{securityDeposit.toLocaleString()} deposit
                 </div>
               )}
             </div>

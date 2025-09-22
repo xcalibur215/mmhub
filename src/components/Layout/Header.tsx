@@ -20,12 +20,12 @@ const Header = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-hero rounded-lg flex items-center justify-center">
-              <Home className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-bold text-foreground">RentHub</span>
-          </Link>
+      <Link to="/" className="flex items-center space-x-2">
+        <div className="w-8 h-8 bg-gradient-hero rounded-lg flex items-center justify-center">
+          <Home className="w-5 h-5 text-white" />
+        </div>
+        <span className="text-xl font-bold text-foreground">MM Hub</span>
+      </Link>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-6">

@@ -95,10 +95,10 @@ const HeroSection = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="any">Any</SelectItem>
-                    <SelectItem value="1000">Up to $1,000</SelectItem>
-                    <SelectItem value="2000">Up to $2,000</SelectItem>
-                    <SelectItem value="3000">Up to $3,000</SelectItem>
-                    <SelectItem value="5000">Up to $5,000</SelectItem>
+                    <SelectItem value="15000">Up to ฿15,000</SelectItem>
+                    <SelectItem value="25000">Up to ฿25,000</SelectItem>
+                    <SelectItem value="35000">Up to ฿35,000</SelectItem>
+                    <SelectItem value="50000">Up to ฿50,000</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

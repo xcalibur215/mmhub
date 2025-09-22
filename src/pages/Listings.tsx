@@ -12,73 +12,73 @@ import { Search, Filter, SlidersHorizontal, MapPin } from "lucide-react";
 const mockProperties = [
   {
     id: "1",
-    title: "Modern Downtown Apartment with City Views",
-    monthlyRent: 2400,
-    securityDeposit: 2400,
+    title: "Modern Downtown Loft",
+    monthlyRent: 32000,
+    securityDeposit: 32000,
     bedrooms: 2,
     bathrooms: 2,
     squareFeet: 1200,
-    location: "Downtown Seattle, WA",
+    location: "Sukhumvit, Bangkok",
     propertyType: "Apartment",
     listedAt: new Date().toISOString(),
   },
   {
     id: "2",
-    title: "Cozy Studio in Trendy Neighborhood",
-    monthlyRent: 1800,
-    securityDeposit: 1800,
+    title: "Cozy Studio Apartment",
+    monthlyRent: 18000,
+    securityDeposit: 18000,
     bedrooms: 1,
     bathrooms: 1,
     squareFeet: 650,
-    location: "Capitol Hill, Seattle, WA",
+    location: "Thong Lo, Bangkok",
     propertyType: "Studio",
     listedAt: new Date(Date.now() - 86400000).toISOString(),
   },
   {
     id: "3",
-    title: "Spacious Family Home with Garden",
-    monthlyRent: 3200,
-    securityDeposit: 3200,
+    title: "Spacious Family Home",
+    monthlyRent: 45000,
+    securityDeposit: 45000,
     bedrooms: 4,
     bathrooms: 3,
     squareFeet: 2200,
-    location: "Bellevue, WA",
+    location: "Rama 9, Bangkok",
     propertyType: "House",
     listedAt: new Date(Date.now() - 172800000).toISOString(),
   },
   {
     id: "4",
-    title: "Luxury Loft with Exposed Brick",
-    monthlyRent: 2800,
-    securityDeposit: 2800,
+    title: "Luxury Penthouse",
+    monthlyRent: 85000,
+    securityDeposit: 85000,
     bedrooms: 1,
     bathrooms: 1.5,
     squareFeet: 900,
-    location: "Fremont, Seattle, WA",
-    propertyType: "Loft",
+    location: "Silom, Bangkok",
+    propertyType: "Condo",
     listedAt: new Date(Date.now() - 259200000).toISOString(),
   },
   {
     id: "5",
     title: "Pet-Friendly Townhouse",
-    monthlyRent: 2600,
-    securityDeposit: 2600,
+    monthlyRent: 26000,
+    securityDeposit: 26000,
     bedrooms: 3,
     bathrooms: 2.5,
     squareFeet: 1800,
-    location: "Redmond, WA",
+    location: "Lat Phrao, Bangkok",
     propertyType: "Townhouse",
     listedAt: new Date(Date.now() - 345600000).toISOString(),
   },
   {
     id: "6",
     title: "Charming Cottage Near Park",
-    monthlyRent: 2200,
-    securityDeposit: 2200,
+    monthlyRent: 22000,
+    securityDeposit: 22000,
     bedrooms: 2,
     bathrooms: 1,
     squareFeet: 1000,
-    location: "Wallingford, Seattle, WA",
+    location: "Chatuchak, Bangkok",
     propertyType: "House",
     listedAt: new Date(Date.now() - 432000000).toISOString(),
   },
@@ -91,7 +91,7 @@ const Listings = () => {
     location: searchParams.get("location") || "",
     bedrooms: searchParams.get("bedrooms") || "",
     maxRent: searchParams.get("maxRent") || "",
-    priceRange: [500, 5000],
+    priceRange: [5000, 100000],
     propertyType: "",
   });
   const [showFilters, setShowFilters] = useState(false);
@@ -142,7 +142,7 @@ const Listings = () => {
       location: "",
       bedrooms: "",
       maxRent: "",
-      priceRange: [500, 5000],
+      priceRange: [5000, 100000],
       propertyType: "",
     });
     setSearchParams({});
@@ -204,12 +204,12 @@ const Listings = () => {
                 {/* Price Range */}
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-3">
-                    Monthly Rent: ${filters.priceRange[0]} - ${filters.priceRange[1]}
+                    Monthly Rent: ฿{filters.priceRange[0].toLocaleString()} - ฿{filters.priceRange[1].toLocaleString()}
                   </label>
                   <Slider
-                    min={500}
-                    max={5000}
-                    step={100}
+                    min={5000}
+                    max={100000}
+                    step={5000}
                     value={filters.priceRange}
                     onValueChange={(value) => handleFilterChange("priceRange", value)}
                     className="mb-4"

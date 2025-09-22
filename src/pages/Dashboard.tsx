@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import StatsOverview from "@/components/dashboard/StatsOverview";
 import { 
   Home, 
   Plus, 
@@ -27,20 +28,20 @@ const Dashboard = () => {
   const stats = {
     renter: {
       favoriteProperties: 12,
-      applications: 3,
+      activeRentals: 1,
+      rentalApplications: 3,
       messages: 5,
-      viewedProperties: 47,
     },
     landlord: {
       activeListings: 8,
       totalInquiries: 23,
       activeLeases: 15,
-      monthlyRevenue: 24800,
+      monthlyRevenue: 45000,
     },
     agent: {
       managedProperties: 32,
       activeClients: 18,
-      monthlyCommissions: 8500,
+      monthlyCommissions: 28500,
       responseRate: 94,
     }
   };
@@ -50,7 +51,7 @@ const Dashboard = () => {
       { icon: Home, label: "Browse Properties", href: "/listings" },
       { icon: Heart, label: "My Favorites", href: "/favorites" },
       { icon: MessageCircle, label: "Messages", href: "/messages" },
-      { icon: FileText, label: "Applications", href: "/applications" },
+      { icon: FileText, label: "Rental Applications", href: "/applications" },
     ],
     landlord: [
       { icon: Plus, label: "Add Property", href: "/properties/new" },
@@ -99,9 +100,9 @@ const Dashboard = () => {
         const roleStats = stats.renter;
         return [
           { label: "Favorite Properties", value: roleStats.favoriteProperties, icon: Heart },
-          { label: "Active Applications", value: roleStats.applications, icon: FileText },
+          { label: "Active Rentals", value: roleStats.activeRentals, icon: Home },
+          { label: "Rental Applications", value: roleStats.rentalApplications, icon: FileText },
           { label: "Unread Messages", value: roleStats.messages, icon: MessageCircle },
-          { label: "Properties Viewed", value: roleStats.viewedProperties, icon: Home },
         ];
       }
       case 'landlord': {
@@ -110,7 +111,7 @@ const Dashboard = () => {
           { label: "Active Listings", value: roleStats.activeListings, icon: Building },
           { label: "New Inquiries", value: roleStats.totalInquiries, icon: MessageCircle },
           { label: "Active Leases", value: roleStats.activeLeases, icon: FileText },
-          { label: "Monthly Revenue", value: `$${roleStats.monthlyRevenue.toLocaleString()}`, icon: BarChart3 },
+          { label: "Monthly Revenue", value: `฿${roleStats.monthlyRevenue.toLocaleString()}`, icon: BarChart3 },
         ];
       }
       case 'agent': {
@@ -118,7 +119,7 @@ const Dashboard = () => {
         return [
           { label: "Managed Properties", value: roleStats.managedProperties, icon: Building },
           { label: "Active Clients", value: roleStats.activeClients, icon: Users },
-          { label: "Monthly Commissions", value: `$${roleStats.monthlyCommissions.toLocaleString()}`, icon: BarChart3 },
+          { label: "Monthly Commissions", value: `฿${roleStats.monthlyCommissions.toLocaleString()}`, icon: BarChart3 },
           { label: "Response Rate", value: `${roleStats.responseRate}%`, icon: MessageCircle },
         ];
       }
@@ -147,34 +148,16 @@ const Dashboard = () => {
               <span className="text-muted-foreground">{user.email}</span>
             </div>
           </div>
-          <Button variant="outline" size="sm">
-            <Settings className="w-4 h-4 mr-2" />
-            Account Settings
+          <Button variant="outline" size="sm" asChild>
+            <a href="/settings">
+              <Settings className="w-4 h-4 mr-2" />
+              Account Settings
+            </a>
           </Button>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {getRoleSpecificStats().map((stat, index) => (
-            <Card key={index} className="hover:shadow-card transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-1">
-                      {stat.label}
-                    </p>
-                    <p className="text-2xl font-bold text-foreground">
-                      {stat.value}
-                    </p>
-                  </div>
-                  <div className="w-12 h-12 bg-gradient-hero rounded-lg flex items-center justify-center">
-                    <stat.icon className="w-6 h-6 text-white" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        {/* Stats Overview */}
+        <StatsOverview userRole={user.role as 'renter' | 'landlord' | 'agent'} />
 
         {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
