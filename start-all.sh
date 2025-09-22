@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BACKEND_DIR="$ROOT_DIR/backend"
+
+BACKEND_PORT=8081
+FRONTEND_PORT=3000
+
+echo "== MM Hub Dev Orchestrator =="
+echo "Backend port: $BACKEND_PORT | Frontend port: $FRONTEND_PORT"
+
+if lsof -nP -iTCP:${BACKEND_PORT} -sTCP:LISTEN >/dev/null 2>&1; then
+  echo "[info] Port ${BACKEND_PORT} in use. Attempting to kill existing process..."
+  lsof -nP -iTCP:${BACKEND_PORT} -sTCP:LISTEN -t | xargs -r kill -9 || true
+  sleep 1
+fi
+
+if lsof -nP -iTCP:${FRONTEND_PORT} -sTCP:LISTEN >/dev/null 2>&1; then
+  echo "[info] Port ${FRONTEND_PORT} in use. Attempting to kill existing process..."
+  lsof -nP -iTCP:${FRONTEND_PORT} -sTCP:LISTEN -t | xargs -r kill -9 || true
+  sleep 1
+fi
+
+echo "[start] Backend (FastAPI/Uvicorn)"
+(
+  cd "$BACKEND_DIR"
+  # Activate virtualenv if exists (support both venv and .venv at repo root)
+  if [[ -f "venv/bin/activate" ]]; then
+    echo "[backend] Activating local venv"
+    source venv/bin/activate
+  elif [[ -f "$ROOT_DIR/.venv/bin/activate" ]]; then
+    echo "[backend] Activating root .venv"
+    source "$ROOT_DIR/.venv/bin/activate"
+  else
+    echo "[backend][warn] No virtualenv detected; using system python ($(which python3 || true))"
+  fi
+
+  # Quick dependency sanity check
+  if ! python -c 'import fastapi, sqlalchemy, passlib' 2>/dev/null; then
+    echo "[backend] Installing dependencies from requirements.txt..."
+    pip install -q -r requirements.txt || {
+      echo "[backend][error] Failed installing dependencies" >&2; exit 1; }
+  fi
+  echo "[backend] Starting Uvicorn (hot reload)"
+  exec uvicorn main:app --host 0.0.0.0 --port ${BACKEND_PORT} --reload
+) & BACKEND_PID=$!
+
+echo "[start] Frontend (Vite)"
+(
+  cd "$ROOT_DIR"
+  exec bun run dev
+) & FRONTEND_PID=$!
+
+echo "Backend PID: ${BACKEND_PID} | Frontend PID: ${FRONTEND_PID}"
+
+cleanup() {
+  echo "\n[shutdown] Stopping services..."
+  kill ${BACKEND_PID} 2>/dev/null || true
+  kill ${FRONTEND_PID} 2>/dev/null || true
+  wait ${BACKEND_PID} 2>/dev/null || true
+  wait ${FRONTEND_PID} 2>/dev/null || true
+  echo "[done] All processes terminated."
+}
+
+trap cleanup INT TERM EXIT
+
+echo "[info] Both services running. Press Ctrl+C to stop."
+wait

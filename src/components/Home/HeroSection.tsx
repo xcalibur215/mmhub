@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, MapPin, Bed, DollarSign } from "lucide-react";
+import LocationAutocomplete from "@/components/ui/location-autocomplete";
+import { Search, Bed, DollarSign } from "lucide-react";
 import heroImage from "@/assets/hero-real-estate.jpg";
 
 const HeroSection = () => {
@@ -54,13 +54,12 @@ const HeroSection = () => {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-foreground mb-2">
-                  <MapPin className="inline w-4 h-4 mr-1" />
-                  Location
+                  Location in Thailand
                 </label>
-                <Input
-                  placeholder="City, neighborhood, or address"
+                <LocationAutocomplete
                   value={searchData.location}
-                  onChange={(e) => setSearchData(prev => ({ ...prev, location: e.target.value }))}
+                  onChange={(value) => setSearchData(prev => ({ ...prev, location: value }))}
+                  placeholder="Bangkok, Chiang Mai, Phuket..."
                   className="h-12"
                 />
               </div>
@@ -68,7 +67,7 @@ const HeroSection = () => {
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
                   <Bed className="inline w-4 h-4 mr-1" />
-                  Bedrooms
+                  Bedrooms (min)
                 </label>
                 <Select value={searchData.bedrooms} onValueChange={(value) => setSearchData(prev => ({ ...prev, bedrooms: value }))}>
                   <SelectTrigger className="h-12">
@@ -76,17 +75,16 @@ const HeroSection = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="any">Any</SelectItem>
-                    <SelectItem value="1">1+ Bed</SelectItem>
-                    <SelectItem value="2">2+ Beds</SelectItem>
-                    <SelectItem value="3">3+ Beds</SelectItem>
-                    <SelectItem value="4">4+ Beds</SelectItem>
+                    <SelectItem value="1">1 Bedroom</SelectItem>
+                    <SelectItem value="2">2 Bedrooms</SelectItem>
+                    <SelectItem value="3">3 Bedrooms</SelectItem>
+                    <SelectItem value="4">4 Bedrooms</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
-                  <DollarSign className="inline w-4 h-4 mr-1" />
                   Max Rent
                 </label>
                 <Select value={searchData.maxRent} onValueChange={(value) => setSearchData(prev => ({ ...prev, maxRent: value }))}>
@@ -99,6 +97,8 @@ const HeroSection = () => {
                     <SelectItem value="25000">Up to ฿25,000</SelectItem>
                     <SelectItem value="35000">Up to ฿35,000</SelectItem>
                     <SelectItem value="50000">Up to ฿50,000</SelectItem>
+                    <SelectItem value="75000">Up to ฿75,000</SelectItem>
+                    <SelectItem value="100000">Up to ฿100,000</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

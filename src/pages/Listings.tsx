@@ -2,17 +2,17 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import PropertyCard from "@/components/Property/PropertyCard";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
+import AdvancedPriceSlider from "@/components/ui/advanced-price-slider";
+import LocationAutocomplete from "@/components/ui/location-autocomplete";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Filter, SlidersHorizontal, MapPin } from "lucide-react";
+import { Search, Filter, SlidersHorizontal } from "lucide-react";
 
 // Mock data - in real app this would come from API
 const mockProperties = [
   {
     id: "1",
-    title: "Modern Downtown Loft",
+    title: "Modern Downtown Apartment",
     monthlyRent: 32000,
     securityDeposit: 32000,
     bedrooms: 2,
@@ -82,6 +82,66 @@ const mockProperties = [
     propertyType: "House",
     listedAt: new Date(Date.now() - 432000000).toISOString(),
   },
+  {
+    id: "7",
+    title: "Beach View Condo",
+    monthlyRent: 35000,
+    securityDeposit: 35000,
+    bedrooms: 2,
+    bathrooms: 2,
+    squareFeet: 1100,
+    location: "Phuket",
+    propertyType: "Condo",
+    listedAt: new Date(Date.now() - 518400000).toISOString(),
+  },
+  {
+    id: "8",
+    title: "Mountain View Villa",
+    monthlyRent: 28000,
+    securityDeposit: 28000,
+    bedrooms: 3,
+    bathrooms: 2,
+    squareFeet: 1600,
+    location: "Chiang Mai",
+    propertyType: "House",
+    listedAt: new Date(Date.now() - 604800000).toISOString(),
+  },
+  {
+    id: "9",
+    title: "Beachfront Studio",
+    monthlyRent: 25000,
+    securityDeposit: 25000,
+    bedrooms: 1,
+    bathrooms: 1,
+    squareFeet: 550,
+    location: "Pattaya",
+    propertyType: "Studio",
+    listedAt: new Date(Date.now() - 691200000).toISOString(),
+  },
+  {
+    id: "10",
+    title: "Luxury High-Rise Condo",
+    monthlyRent: 65000,
+    securityDeposit: 65000,
+    bedrooms: 3,
+    bathrooms: 3,
+    squareFeet: 1800,
+    location: "Sathorn, Bangkok",
+    propertyType: "Condo",
+    listedAt: new Date(Date.now() - 777600000).toISOString(),
+  },
+  {
+    id: "11",
+    title: "Premium Penthouse Suite",
+    monthlyRent: 85000,
+    securityDeposit: 85000,
+    bedrooms: 4,
+    bathrooms: 4,
+    squareFeet: 2500,
+    location: "Silom, Bangkok",
+    propertyType: "Condo",
+    listedAt: new Date(Date.now() - 864000000).toISOString(),
+  },
 ];
 
 const Listings = () => {
@@ -91,7 +151,7 @@ const Listings = () => {
     location: searchParams.get("location") || "",
     bedrooms: searchParams.get("bedrooms") || "",
     maxRent: searchParams.get("maxRent") || "",
-    priceRange: [5000, 100000],
+    priceRange: [3000, 6000] as [number, number],
     propertyType: "",
   });
   const [showFilters, setShowFilters] = useState(false);
@@ -117,9 +177,17 @@ const Listings = () => {
     }
 
     filtered = filtered.filter(
-      (property) =>
-        property.monthlyRent >= filters.priceRange[0] &&
-        property.monthlyRent <= filters.priceRange[1]
+      (property) => {
+        const minPrice = filters.priceRange[0];
+        const maxPrice = filters.priceRange[1];
+        
+        // If max price is 50000, include all properties 50000 and above
+        if (maxPrice >= 50000) {
+          return property.monthlyRent >= minPrice;
+        }
+        
+        return property.monthlyRent >= minPrice && property.monthlyRent <= maxPrice;
+      }
     );
 
     if (filters.propertyType && filters.propertyType !== "any") {
@@ -142,7 +210,7 @@ const Listings = () => {
       location: "",
       bedrooms: "",
       maxRent: "",
-      priceRange: [5000, 100000],
+      priceRange: [3000, 6000] as [number, number],
       propertyType: "",
     });
     setSearchParams({});
@@ -163,13 +231,13 @@ const Listings = () => {
           </div>
 
           {/* Quick Search */}
-          <div className="max-w-2xl mx-auto">
+          <div className="max-w-2xl mx-auto space-y-4">
             <div className="flex gap-2">
               <div className="flex-1">
-                <Input
-                  placeholder="Search by location..."
+                <LocationAutocomplete
+                  placeholder="Search properties in Thailand..."
                   value={filters.location}
-                  onChange={(e) => handleFilterChange("location", e.target.value)}
+                  onChange={(value) => handleFilterChange("location", value)}
                   className="h-12"
                 />
               </div>
@@ -182,6 +250,21 @@ const Listings = () => {
                 <SlidersHorizontal className="w-4 h-4 mr-2" />
                 Filters
               </Button>
+            </div>
+
+            {/* Mobile Price Slider - Show on smaller screens */}
+            <div className="lg:hidden">
+              <Card className="bg-background/95 backdrop-blur-sm border-border/50">
+                <CardContent className="p-4">
+                  <AdvancedPriceSlider
+                    min={1000}
+                    max={50000}
+                    value={filters.priceRange}
+                    onValueChange={(value) => handleFilterChange("priceRange", value)}
+                    showInputs={true}
+                  />
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>
@@ -203,23 +286,19 @@ const Listings = () => {
               <CardContent className="space-y-6">
                 {/* Price Range */}
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-3">
-                    Monthly Rent: ฿{filters.priceRange[0].toLocaleString()} - ฿{filters.priceRange[1].toLocaleString()}
-                  </label>
-                  <Slider
-                    min={5000}
-                    max={100000}
-                    step={5000}
+                  <AdvancedPriceSlider
+                    min={1000}
+                    max={50000}
                     value={filters.priceRange}
                     onValueChange={(value) => handleFilterChange("priceRange", value)}
-                    className="mb-4"
+                    showInputs={true}
                   />
                 </div>
 
                 {/* Bedrooms */}
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
-                    Minimum Bedrooms
+                    Bedrooms (minimum)
                   </label>
                   <Select
                     value={filters.bedrooms}
@@ -230,10 +309,10 @@ const Listings = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="any">Any</SelectItem>
-                      <SelectItem value="1">1+ Bedroom</SelectItem>
-                      <SelectItem value="2">2+ Bedrooms</SelectItem>
-                      <SelectItem value="3">3+ Bedrooms</SelectItem>
-                      <SelectItem value="4">4+ Bedrooms</SelectItem>
+                      <SelectItem value="1">1 Bedroom</SelectItem>
+                      <SelectItem value="2">2 Bedrooms</SelectItem>
+                      <SelectItem value="3">3 Bedrooms</SelectItem>
+                      <SelectItem value="4">4 Bedrooms</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -255,8 +334,8 @@ const Listings = () => {
                       <SelectItem value="Apartment">Apartment</SelectItem>
                       <SelectItem value="House">House</SelectItem>
                       <SelectItem value="Studio">Studio</SelectItem>
-                      <SelectItem value="Loft">Loft</SelectItem>
                       <SelectItem value="Townhouse">Townhouse</SelectItem>
+                      <SelectItem value="Condo">Condo</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

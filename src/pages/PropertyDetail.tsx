@@ -23,7 +23,7 @@ import { useState } from "react";
 const mockProperty = {
   id: "1",
   title: "Modern Downtown Apartment with City Views",
-  description: "Beautiful downtown apartment featuring floor-to-ceiling windows with stunning city views. This modern unit includes a fully equipped kitchen with stainless steel appliances, in-unit washer/dryer, and access to building amenities including a fitness center, rooftop deck, and 24/7 concierge service. Perfect for professionals seeking luxury urban living.",
+  description: "Beautiful downtown apartment featuring floor-to-ceiling windows with stunning city views. This modern unit includes a fully equipped kitchen with stainless steel appliances, in-unit washer/dryer, and access to building amenities including a fitness center. Features high-speed WiFi and a dedicated working desk space. Perfect for professionals seeking luxury urban living.",
   monthlyRent: 32000,
   securityDeposit: 32000,
   bedrooms: 2,
@@ -42,15 +42,13 @@ const mockProperty = {
   ],
   amenities: [
     "In-unit washer/dryer",
-    "Dishwasher",
     "Air conditioning",
-    "Hardwood floors",
-    "Walk-in closet",
+    "Closet",
     "Balcony",
     "Fitness center",
-    "Rooftop deck",
-    "24/7 concierge",
     "Parking available",
+    "WiFi",
+    "Working desk",
   ],
   contactProfile: {
     name: "Sarah Johnson",

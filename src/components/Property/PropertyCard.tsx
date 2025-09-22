@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Heart, MapPin, Bed, Bath, Square, Calendar } from "lucide-react";
 import { useState } from "react";
+import { useCurrency } from "@/utils/currency";
 
 interface PropertyCardProps {
   id: string;
@@ -37,6 +38,7 @@ const PropertyCard = ({
   onToggleFavorite,
 }: PropertyCardProps) => {
   const [isImageLoading, setIsImageLoading] = useState(true);
+  const { formatPrice, convertFromUSD } = useCurrency();
   
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -109,12 +111,12 @@ const PropertyCard = ({
             {/* Price */}
             <div className="flex items-baseline justify-between">
               <div className="text-2xl font-bold text-foreground">
-                ฿{monthlyRent.toLocaleString()}
+                {formatPrice(convertFromUSD(monthlyRent))}
                 <span className="text-sm font-normal text-muted-foreground">/month</span>
               </div>
               {securityDeposit && (
                 <div className="text-sm text-muted-foreground">
-                  +฿{securityDeposit.toLocaleString()} deposit
+                  +{formatPrice(convertFromUSD(securityDeposit))} deposit
                 </div>
               )}
             </div>

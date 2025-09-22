@@ -1,16 +1,19 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Home, Menu, X, User, Heart, MessageCircle } from "lucide-react";
+import { Home, Menu, X, User, Heart, MessageCircle, LogOut } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { user, isAdmin, logout } = useAuth();
   const location = useLocation();
 
   const navItems = [
     { href: "/", label: "Home", icon: Home },
     { href: "/listings", label: "Browse Properties", icon: null },
-    { href: "/dashboard", label: "Dashboard", icon: User },
+    ...(user ? [{ href: isAdmin ? "/admin" : "/dashboard", label: isAdmin ? "Admin" : "Dashboard", icon: User }] : []),
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -47,24 +50,51 @@ const Header = () => {
 
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center space-x-3">
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/favorites">
-                <Heart className="w-4 h-4" />
-                Favorites
-              </Link>
-            </Button>
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/messages">
-                <MessageCircle className="w-4 h-4" />
-                Messages
-              </Link>
-            </Button>
-            <Button variant="outline" size="sm" asChild>
-              <Link to="/auth/login">Sign In</Link>
-            </Button>
-            <Button variant="hero" size="sm" asChild>
-              <Link to="/auth/register">Get Started</Link>
-            </Button>
+            {user && (
+              <>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link to="/favorites">
+                    <Heart className="w-4 h-4" />
+                    Favorites
+                  </Link>
+                </Button>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link to="/messages">
+                    <MessageCircle className="w-4 h-4" />
+                    Messages
+                  </Link>
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="flex items-center space-x-2">
+                      <User className="w-4 h-4" />
+                      <span>{user.username}</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem asChild>
+                      <Link to={isAdmin ? '/admin' : '/dashboard'}>{isAdmin ? 'Admin Panel' : 'Dashboard'}</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/settings">Settings</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={logout} className="text-red-600">
+                      <LogOut className="w-4 h-4 mr-2" /> Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            )}
+            {!user && (
+              <>
+                <Button variant="outline" size="sm" asChild>
+                  <Link to="/auth/login">Sign In</Link>
+                </Button>
+                <Button variant="hero" size="sm" asChild>
+                  <Link to="/auth/register">Get Started</Link>
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -100,16 +130,32 @@ const Header = () => {
                 </Link>
               ))}
               <div className="pt-4 border-t border-border mt-4 flex flex-col space-y-2">
-                <Button variant="outline" size="sm" className="justify-start" asChild>
-                  <Link to="/auth/login" onClick={() => setIsMobileMenuOpen(false)}>
-                    Sign In
-                  </Link>
-                </Button>
-                <Button variant="hero" size="sm" className="justify-start" asChild>
-                  <Link to="/auth/register" onClick={() => setIsMobileMenuOpen(false)}>
-                    Get Started
-                  </Link>
-                </Button>
+                {!user && (
+                  <>
+                    <Button variant="outline" size="sm" className="justify-start" asChild>
+                      <Link to="/auth/login" onClick={() => setIsMobileMenuOpen(false)}>
+                        Sign In
+                      </Link>
+                    </Button>
+                    <Button variant="hero" size="sm" className="justify-start" asChild>
+                      <Link to="/auth/register" onClick={() => setIsMobileMenuOpen(false)}>
+                        Get Started
+                      </Link>
+                    </Button>
+                  </>
+                )}
+                {user && (
+                  <>
+                    <Button variant="ghost" size="sm" className="justify-start" asChild>
+                      <Link to={isAdmin ? '/admin' : '/dashboard'} onClick={() => setIsMobileMenuOpen(false)}>
+                        {isAdmin ? 'Admin Panel' : 'Dashboard'}
+                      </Link>
+                    </Button>
+                    <Button variant="destructive" size="sm" className="justify-start" onClick={() => { logout(); setIsMobileMenuOpen(false); }}>
+                      Logout
+                    </Button>
+                  </>
+                )}
               </div>
             </nav>
           </div>

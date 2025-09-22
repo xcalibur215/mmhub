@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import StatsOverview from "@/components/dashboard/StatsOverview";
+import { useCurrency } from "@/utils/currency";
 import { 
   Home, 
   Plus, 
@@ -18,6 +19,8 @@ import {
 } from "lucide-react";
 
 const Dashboard = () => {
+  const { formatPrice } = useCurrency();
+  
   // Mock user data - in real app this would come from auth context
   const [user] = useState({
     name: "John Doe",
@@ -111,7 +114,7 @@ const Dashboard = () => {
           { label: "Active Listings", value: roleStats.activeListings, icon: Building },
           { label: "New Inquiries", value: roleStats.totalInquiries, icon: MessageCircle },
           { label: "Active Leases", value: roleStats.activeLeases, icon: FileText },
-          { label: "Monthly Revenue", value: `฿${roleStats.monthlyRevenue.toLocaleString()}`, icon: BarChart3 },
+          { label: "Monthly Revenue", value: formatPrice(roleStats.monthlyRevenue), icon: BarChart3 },
         ];
       }
       case 'agent': {
@@ -119,7 +122,7 @@ const Dashboard = () => {
         return [
           { label: "Managed Properties", value: roleStats.managedProperties, icon: Building },
           { label: "Active Clients", value: roleStats.activeClients, icon: Users },
-          { label: "Monthly Commissions", value: `฿${roleStats.monthlyCommissions.toLocaleString()}`, icon: BarChart3 },
+          { label: "Monthly Commissions", value: formatPrice(roleStats.monthlyCommissions), icon: BarChart3 },
           { label: "Response Rate", value: `${roleStats.responseRate}%`, icon: MessageCircle },
         ];
       }

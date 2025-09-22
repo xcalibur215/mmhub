@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Home, Eye, EyeOff, User, Building, Users } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
 const Register = () => {
@@ -27,10 +28,11 @@ const Register = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const roleOptions = [
-    { value: "renter", label: "Renter", description: "Looking for a place to rent", icon: User },
+    { value: "user", label: "Renter", description: "Looking for a place to rent", icon: User },
     { value: "landlord", label: "Landlord", description: "I own rental properties", icon: Building },
     { value: "agent", label: "Agent", description: "I manage properties for others", icon: Users },
   ];
+  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,20 +60,58 @@ const Register = () => {
     }
 
     try {
-      // TODO: Implement actual registration with Supabase
-      // For now, simulate registration
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      toast({
-        title: "Account created successfully!",
-        description: "Welcome to RentHub. You can now start exploring properties.",
-      });
-      
-      navigate("/dashboard");
+      // Build username from email local part
+      const emailLocal = formData.email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '').slice(0, 20) || 'user';
+      let attemptUsername = emailLocal;
+      let registered = false;
+      let attempt = 0;
+      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8081/api/v1';
+      let lastError: string | null = null;
+      while (!registered && attempt < 2) {
+        const payload = {
+          email: formData.email,
+            username: attemptUsername,
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+            phone: null,
+            password: formData.password,
+            role: formData.role || undefined
+        };
+        const res = await fetch(`${API_BASE}/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          registered = true;
+          break;
+        } else {
+          const errJson = await res.json().catch(() => ({}));
+          lastError = errJson.detail || `Registration failed (${res.status})`;
+          // If duplicate username try adding random suffix once
+          if (lastError && /username/i.test(lastError) && attempt === 0) {
+            attemptUsername = `${emailLocal}${Math.floor(Math.random()*1000)}`.slice(0,24);
+          }
+          attempt++;
+        }
+      }
+      if (!registered) {
+        throw new Error(lastError || 'Registration failed');
+      }
+
+      // Auto login
+      const loggedIn = await login(formData.email, formData.password);
+      if (loggedIn) {
+        toast({ title: 'Account created successfully!', description: 'Welcome to RentHub.' });
+        navigate('/dashboard');
+      } else {
+        toast({ title: 'Account created, please sign in', description: 'Login manually with your credentials.' });
+        navigate('/auth/login');
+      }
     } catch (error) {
       toast({
         title: "Registration failed",
-        description: "Something went wrong. Please try again.",
+        description: (error as any)?.message || "Something went wrong. Please try again.",
         variant: "destructive",
       });
     } finally {

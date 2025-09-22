@@ -1,73 +1,97 @@
-# Welcome to your Lovable project
+# MM Hub - Real Estate Platform
 
-## Project info
+## Project Description
 
-**URL**: https://lovable.dev/projects/9c90d88f-697a-4e23-aba0-0b95ae8b5bdc
+MM Hub is a comprehensive real estate platform for finding and listing rental properties. Discover thousands of quality rental properties from verified landlords and trusted agents.
 
-## How can I edit this code?
+## Getting Started
 
-There are several ways of editing your application.
+Follow these steps to run the project locally:
 
-**Use Lovable**
+### Prerequisites
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/9c90d88f-697a-4e23-aba0-0b95ae8b5bdc) and start prompting.
+- Node.js & npm (or Bun) - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+### Installation
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
+# Step 1: Clone the repository
 git clone <YOUR_GIT_URL>
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# Step 2: Navigate to the project directory
+cd mmhub
 
-# Step 3: Install the necessary dependencies.
-npm i
+# Step 3: Install dependencies
+bun install
+# or
+npm install
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Step 4: Start the development server
+bun run dev
+# or
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+The application will be available at http://localhost:8080
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Development Options
 
-**Use GitHub Codespaces**
+**Local Development**
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Clone this repository and work with your preferred IDE. Changes can be pushed back to the main branch.
 
-## What technologies are used for this project?
+**GitHub Codespaces**
 
-This project is built with:
+- Navigate to the main page of your repository
+- Click on the "Code" button (green button) near the top right
+- Select the "Codespaces" tab
+- Click on "New codespace" to launch a new Codespace environment
+- Edit files directly within the Codespace and commit your changes
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+**Direct GitHub Editing**
 
-## How can I deploy this project?
+- Navigate to the desired file(s)
+- Click the "Edit" button (pencil icon) at the top right of the file view
+- Make your changes and commit them
 
-Simply open [Lovable](https://lovable.dev/projects/9c90d88f-697a-4e23-aba0-0b95ae8b5bdc) and click on Share -> Publish.
+## Technologies Used
 
-## Can I connect a custom domain to my Lovable project?
+This project is built with modern web technologies:
 
-Yes, you can!
+- **Vite** - Fast build tool and development server
+- **TypeScript** - Type-safe JavaScript
+- **React** - UI library
+- **shadcn/ui** - Modern UI components
+- **Tailwind CSS** - Utility-first CSS framework
+- **React Router** - Client-side routing
+- **React Hook Form** - Form handling
+- **Zod** - Schema validation
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## Project Structure
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+```
+src/
+├── components/     # Reusable UI components
+├── pages/         # Application pages/routes
+├── hooks/         # Custom React hooks
+├── lib/           # Utility functions
+└── assets/        # Static assets
+```
+
+## Available Scripts
+
+- `bun run dev` - Start development server
+- `bun run build` - Build for production
+- `bun run build:dev` - Build in development mode
+- `bun run preview` - Preview production build
+- `bun run lint` - Run ESLint
+
+## Deployment
+
+Build the project for production:
+
+```sh
+bun run build
+```
+
+The built files will be in the `dist` directory, ready for deployment to your preferred hosting platform.

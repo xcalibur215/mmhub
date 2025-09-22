@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Home, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/context/AuthContext";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -17,28 +18,22 @@ const Login = () => {
     password: "",
   });
   const [isLoading, setIsLoading] = useState(false);
+  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      // TODO: Implement actual authentication with Supabase
-      // For now, simulate login
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      toast({
-        title: "Welcome back!",
-        description: "You have successfully signed in to RentHub.",
-      });
-      
-      navigate("/dashboard");
+      const ok = await login(formData.email, formData.password);
+      if (ok) {
+        toast({ title: "Welcome back!", description: "Signed in successfully." });
+        navigate("/dashboard");
+      } else {
+        toast({ title: "Sign in failed", description: "Invalid credentials.", variant: "destructive" });
+      }
     } catch (error) {
-      toast({
-        title: "Sign in failed",
-        description: "Please check your credentials and try again.",
-        variant: "destructive",
-      });
+      toast({ title: "Sign in error", description: (error as any)?.message || 'Unexpected error', variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
