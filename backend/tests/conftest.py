@@ -1,14 +1,15 @@
 import os
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from main import app
+from core.config import settings
 from db.base import Base
 from db.session import get_db
-from core.config import settings
+from main import app
 
 # Create test database
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
@@ -49,9 +50,9 @@ def test_db():
     connection = engine.connect()
     transaction = connection.begin()
     session = TestingSessionLocal(bind=connection)
-    
+
     yield session
-    
+
     session.close()
     transaction.rollback()
     connection.close()
@@ -73,7 +74,7 @@ def test_user_data():
         "password": "testpassword123",
         "first_name": "Test",
         "last_name": "User",
-        "phone": "+1234567890"
+        "phone": "+1234567890",
     }
 
 
@@ -98,5 +99,5 @@ def test_property_data():
         "is_furnished": False,
         "pets_allowed": True,
         "parking_available": True,
-        "utilities_included": False
+        "utilities_included": False,
     }

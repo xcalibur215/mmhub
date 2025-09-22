@@ -43,5 +43,10 @@ def setup_app_logging(config) -> None:
         logging_logger.handlers = [InterceptHandler(level=logging.INFO)]
 
     logger.configure(
-        handlers=[{"sink": sys.stderr, "level": logging.DEBUG if config.DEBUG else logging.INFO}]
+        handlers=[
+            {
+                "sink": sys.stderr,
+                "level": logging.DEBUG if config.DEBUG else logging.INFO,
+            }
+        ]
     )

@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, ForeignKey
+from sqlalchemy import Column, ForeignKey, Integer
 from sqlalchemy.orm import relationship
+
 from db.base import Base
 
 
@@ -11,7 +12,7 @@ class PropertyAmenity(Base):
     amenity_id = Column(Integer, ForeignKey("amenities.id"), nullable=False)
 
     # Relationships
-    property = relationship("Property", back_populates="amenities")
+    property = relationship("Property", back_populates="amenity_links")
     amenity = relationship("Amenity")
 
     def __repr__(self):

@@ -4,9 +4,10 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Heart, MapPin, Bed, Bath, Square, Calendar } from "lucide-react";
 import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 import { useCurrency } from "@/utils/currency";
 
-interface PropertyCardProps {
+export interface PropertyCardProps {
   id: string;
   title: string;
   monthlyRent: number;
@@ -40,10 +41,16 @@ const PropertyCard = ({
   const [isImageLoading, setIsImageLoading] = useState(true);
   const { formatPrice, convertFromUSD } = useCurrency();
   
+  const { toast } = useToast();
+
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     onToggleFavorite?.(id);
+    toast({
+      title: isFavorited ? "Removed from favorites" : "Added to favorites",
+      description: title,
+    });
   };
 
   const formatDate = (dateString: string) => {

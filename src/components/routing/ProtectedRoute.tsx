@@ -14,3 +14,10 @@ export const AdminRoute = ({ children }: { children: ReactNode }) => {
   if (!isAdmin) return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
 };
+
+export const ModeratorRoute = ({ children }: { children: ReactNode }) => {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/auth/login" replace />;
+  if (!(user.role === 'moderator' || user.role === 'admin')) return <Navigate to="/dashboard" replace />;
+  return <>{children}</>;
+};

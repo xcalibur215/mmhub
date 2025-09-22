@@ -1,7 +1,20 @@
 from datetime import datetime
 from enum import Enum
-from sqlalchemy import Column, Integer, String, Text, Float, Boolean, DateTime, ForeignKey
+
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
 from sqlalchemy.orm import relationship
+
+from db.models.amenity import Amenity  # for direct amenities relationship
+
 from db.base import Base
 
 
@@ -31,7 +44,7 @@ class Property(Base):
     description = Column(Text, nullable=True)
     property_type = Column(String, nullable=False)
     status = Column(String, default=PropertyStatus.AVAILABLE)
-    
+
     # Location details
     address = Column(String, nullable=False)
     city = Column(String, nullable=False, index=True)
@@ -40,7 +53,7 @@ class Property(Base):
     country = Column(String, nullable=False, default="Thailand")
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
-    
+
     # Property details
     bedrooms = Column(Integer, nullable=False, default=0)
     bathrooms = Column(Float, nullable=False, default=0)
@@ -49,42 +62,51 @@ class Property(Base):
     year_built = Column(Integer, nullable=True)
     floor_number = Column(Integer, nullable=True)
     total_floors = Column(Integer, nullable=True)
-    
+
     # Pricing
     rent_price = Column(Float, nullable=False)
     security_deposit = Column(Float, nullable=True)
-    
+
     # Compatibility alias for frontend
     @property
     def monthly_rent(self):
         return self.rent_price
-    
+
     # Features
     is_furnished = Column(Boolean, default=False)
     pets_allowed = Column(Boolean, default=False)
     smoking_allowed = Column(Boolean, default=False)
     parking_available = Column(Boolean, default=False)
     utilities_included = Column(Boolean, default=False)
-    
+
     # Lease terms
     min_lease_term = Column(Integer, nullable=True)  # in months
     max_lease_term = Column(Integer, nullable=True)  # in months
     available_from = Column(DateTime, nullable=True)
-    
+
     # Meta
     views_count = Column(Integer, default=0)
     is_featured = Column(Boolean, default=False)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
+
     # Foreign keys
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    
+
     # Relationships
     owner = relationship("User", back_populates="properties")
-    photos = relationship("PropertyPhoto", back_populates="property", cascade="all, delete-orphan")
-    amenities = relationship("PropertyAmenity", back_populates="property", cascade="all, delete-orphan")
+    photos = relationship(
+        "PropertyPhoto", back_populates="property", cascade="all, delete-orphan"
+    )
+    # Association table link objects
+    amenity_links = relationship(
+        "PropertyAmenity", back_populates="property", cascade="all, delete-orphan"
+    )
+    # Direct Amenity objects (read-only view through secondary table)
+    amenities = relationship(
+        "Amenity", secondary="property_amenities", viewonly=True
+    )
 
     def __repr__(self):
         return f"<Property(id={self.id}, title={self.title}, city={self.city})>"

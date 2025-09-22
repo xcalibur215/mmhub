@@ -1,9 +1,10 @@
+import time
+
+import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
-import time
-import uvicorn
 
 from core.config import settings
 from core.logging import setup_app_logging
@@ -23,9 +24,11 @@ setup_app_logging(settings)
 
 # Add CORS middleware
 if settings.BACKEND_CORS_ORIGINS:
+    # Normalize and strip trailing slashes to ensure exact match with browser Origin
+    allowed_origins = [str(origin).rstrip("/") for origin in settings.BACKEND_CORS_ORIGINS]
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[str(origin) for origin in settings.BACKEND_CORS_ORIGINS],
+        allow_origins=allowed_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -34,7 +37,13 @@ if settings.BACKEND_CORS_ORIGINS:
 # Add trusted host middleware (security)
 app.add_middleware(
     TrustedHostMiddleware,
-    allowed_hosts=["localhost", "127.0.0.1", "*.mmhub.com"]
+    allowed_hosts=[
+        "localhost",
+        "127.0.0.1",
+        "10.0.0.26",
+        "192.168.20.1",
+        "*.mmhub.com",
+    ],
 )
 
 
@@ -51,18 +60,12 @@ async def add_process_time_header(request: Request, call_next):
 # Exception handlers
 @app.exception_handler(404)
 async def not_found_handler(request: Request, exc):
-    return JSONResponse(
-        status_code=404,
-        content={"detail": "Resource not found"}
-    )
+    return JSONResponse(status_code=404, content={"detail": "Resource not found"})
 
 
 @app.exception_handler(500)
 async def internal_error_handler(request: Request, exc):
-    return JSONResponse(
-        status_code=500,
-        content={"detail": "Internal server error"}
-    )
+    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
 
 # Health check endpoint
@@ -71,7 +74,7 @@ async def health_check():
     return {
         "status": "healthy",
         "environment": settings.ENVIRONMENT,
-        "app_name": settings.APP_NAME
+        "app_name": settings.APP_NAME,
     }
 
 
@@ -82,21 +85,42 @@ async def root():
         "message": "Welcome to MM Hub API",
         "version": "1.0.0",
         "docs": "/docs",
-        "health": "/health"
+        "health": "/health",
     }
 
 
+from api.v1.routes.admin import router as admin_router
+from api.v1.routes.moderation import router as moderation_router
+
 # Include API routes
 from api.v1.routes.auth import router as auth_router
-from api.v1.routes.users import router as users_router
 from api.v1.routes.properties import router as properties_router
-from api.v1.routes.admin import router as admin_router
+from api.v1.routes.users import router as users_router
 
-app.include_router(auth_router, prefix=settings.API_V1_STR + "/auth", tags=["authentication"])
+app.include_router(
+    auth_router, prefix=settings.API_V1_STR + "/auth", tags=["authentication"]
+)
 app.include_router(users_router, prefix=settings.API_V1_STR + "/users", tags=["users"])
-app.include_router(properties_router, prefix=settings.API_V1_STR + "/properties", tags=["properties"])
+app.include_router(
+    properties_router, prefix=settings.API_V1_STR + "/properties", tags=["properties"]
+)
 app.include_router(admin_router, prefix=settings.API_V1_STR + "/admin", tags=["admin"])
+app.include_router(moderation_router, prefix=settings.API_V1_STR, tags=["moderation"])
 
+
+# Ensure tables exist in development (safe for SQLite)
+try:
+    from db.base import Base, engine  # type: ignore
+
+    @app.on_event("startup")
+    async def ensure_tables():
+        try:
+            Base.metadata.create_all(bind=engine)
+        except Exception:
+            # Avoid crashing if migrations are managed elsewhere
+            pass
+except Exception:
+    pass
 
 if __name__ == "__main__":
     uvicorn.run(

@@ -5,13 +5,14 @@ import {
   Key, 
   TrendingUp,
   Heart,
-  MessageCircle 
+  MessageCircle,
+  LucideIcon
 } from "lucide-react";
 
 interface StatCard {
   label: string;
   value: string | number;
-  icon: any;
+  icon: LucideIcon;
 }
 
 interface StatsOverviewProps {

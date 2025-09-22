@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
+import { useAuth } from "@/context/AuthContext";
 import { useSearchParams } from "react-router-dom";
-import PropertyCard from "@/components/Property/PropertyCard";
+import PropertyCard, { PropertyCardProps } from "@/components/Property/PropertyCard";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import AdvancedPriceSlider from "@/components/ui/advanced-price-slider";
@@ -8,145 +9,14 @@ import LocationAutocomplete from "@/components/ui/location-autocomplete";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Search, Filter, SlidersHorizontal } from "lucide-react";
 
-// Mock data - in real app this would come from API
-const mockProperties = [
-  {
-    id: "1",
-    title: "Modern Downtown Apartment",
-    monthlyRent: 32000,
-    securityDeposit: 32000,
-    bedrooms: 2,
-    bathrooms: 2,
-    squareFeet: 1200,
-    location: "Sukhumvit, Bangkok",
-    propertyType: "Apartment",
-    listedAt: new Date().toISOString(),
-  },
-  {
-    id: "2",
-    title: "Cozy Studio Apartment",
-    monthlyRent: 18000,
-    securityDeposit: 18000,
-    bedrooms: 1,
-    bathrooms: 1,
-    squareFeet: 650,
-    location: "Thong Lo, Bangkok",
-    propertyType: "Studio",
-    listedAt: new Date(Date.now() - 86400000).toISOString(),
-  },
-  {
-    id: "3",
-    title: "Spacious Family Home",
-    monthlyRent: 45000,
-    securityDeposit: 45000,
-    bedrooms: 4,
-    bathrooms: 3,
-    squareFeet: 2200,
-    location: "Rama 9, Bangkok",
-    propertyType: "House",
-    listedAt: new Date(Date.now() - 172800000).toISOString(),
-  },
-  {
-    id: "4",
-    title: "Luxury Penthouse",
-    monthlyRent: 85000,
-    securityDeposit: 85000,
-    bedrooms: 1,
-    bathrooms: 1.5,
-    squareFeet: 900,
-    location: "Silom, Bangkok",
-    propertyType: "Condo",
-    listedAt: new Date(Date.now() - 259200000).toISOString(),
-  },
-  {
-    id: "5",
-    title: "Pet-Friendly Townhouse",
-    monthlyRent: 26000,
-    securityDeposit: 26000,
-    bedrooms: 3,
-    bathrooms: 2.5,
-    squareFeet: 1800,
-    location: "Lat Phrao, Bangkok",
-    propertyType: "Townhouse",
-    listedAt: new Date(Date.now() - 345600000).toISOString(),
-  },
-  {
-    id: "6",
-    title: "Charming Cottage Near Park",
-    monthlyRent: 22000,
-    securityDeposit: 22000,
-    bedrooms: 2,
-    bathrooms: 1,
-    squareFeet: 1000,
-    location: "Chatuchak, Bangkok",
-    propertyType: "House",
-    listedAt: new Date(Date.now() - 432000000).toISOString(),
-  },
-  {
-    id: "7",
-    title: "Beach View Condo",
-    monthlyRent: 35000,
-    securityDeposit: 35000,
-    bedrooms: 2,
-    bathrooms: 2,
-    squareFeet: 1100,
-    location: "Phuket",
-    propertyType: "Condo",
-    listedAt: new Date(Date.now() - 518400000).toISOString(),
-  },
-  {
-    id: "8",
-    title: "Mountain View Villa",
-    monthlyRent: 28000,
-    securityDeposit: 28000,
-    bedrooms: 3,
-    bathrooms: 2,
-    squareFeet: 1600,
-    location: "Chiang Mai",
-    propertyType: "House",
-    listedAt: new Date(Date.now() - 604800000).toISOString(),
-  },
-  {
-    id: "9",
-    title: "Beachfront Studio",
-    monthlyRent: 25000,
-    securityDeposit: 25000,
-    bedrooms: 1,
-    bathrooms: 1,
-    squareFeet: 550,
-    location: "Pattaya",
-    propertyType: "Studio",
-    listedAt: new Date(Date.now() - 691200000).toISOString(),
-  },
-  {
-    id: "10",
-    title: "Luxury High-Rise Condo",
-    monthlyRent: 65000,
-    securityDeposit: 65000,
-    bedrooms: 3,
-    bathrooms: 3,
-    squareFeet: 1800,
-    location: "Sathorn, Bangkok",
-    propertyType: "Condo",
-    listedAt: new Date(Date.now() - 777600000).toISOString(),
-  },
-  {
-    id: "11",
-    title: "Premium Penthouse Suite",
-    monthlyRent: 85000,
-    securityDeposit: 85000,
-    bedrooms: 4,
-    bathrooms: 4,
-    squareFeet: 2500,
-    location: "Silom, Bangkok",
-    propertyType: "Condo",
-    listedAt: new Date(Date.now() - 864000000).toISOString(),
-  },
-];
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8081/api/v1';
 
 const Listings = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [filteredProperties, setFilteredProperties] = useState(mockProperties);
+  const [properties, setProperties] = useState<PropertyCardProps[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [filteredProperties, setFilteredProperties] = useState<PropertyCardProps[]>([]);
   const [filters, setFilters] = useState({
     location: searchParams.get("location") || "",
     bedrooms: searchParams.get("bedrooms") || "",
@@ -157,52 +27,59 @@ const Listings = () => {
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
-    // Apply filters
-    let filtered = mockProperties;
-
-    if (filters.location) {
-      filtered = filtered.filter((property) =>
-        property.location.toLowerCase().includes(filters.location.toLowerCase())
-      );
-    }
-
-    if (filters.bedrooms && filters.bedrooms !== "any") {
-      const minBedrooms = parseInt(filters.bedrooms);
-      filtered = filtered.filter((property) => property.bedrooms >= minBedrooms);
-    }
-
-    if (filters.maxRent && filters.maxRent !== "any") {
-      const maxRent = parseInt(filters.maxRent);
-      filtered = filtered.filter((property) => property.monthlyRent <= maxRent);
-    }
-
-    filtered = filtered.filter(
-      (property) => {
-        const minPrice = filters.priceRange[0];
-        const maxPrice = filters.priceRange[1];
-        
-        // If max price is 50000, include all properties 50000 and above
-        if (maxPrice >= 50000) {
-          return property.monthlyRent >= minPrice;
-        }
-        
-        return property.monthlyRent >= minPrice && property.monthlyRent <= maxPrice;
+    const fetchProperties = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch(`${API_BASE}/properties`);
+        if (!res.ok) throw new Error(`Failed to load properties (${res.status})`);
+        const json = await res.json();
+        setProperties(json);
+        setFilteredProperties(json);
+      } catch (e: unknown) {
+        setError(e instanceof Error ? e.message : 'Unknown error');
+      } finally {
+        setLoading(false);
       }
-    );
-
-    if (filters.propertyType && filters.propertyType !== "any") {
-      filtered = filtered.filter((property) => property.propertyType === filters.propertyType);
-    }
-
-    setFilteredProperties(filtered);
-  }, [filters]);
+    };
+    fetchProperties();
+  }, []);
 
   const handleFilterChange = (key: string, value: string | number[]) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleToggleFavorite = (id: string) => {
-    console.log('Toggle favorite for property:', id);
+  const { accessToken } = useAuth();
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+
+  const handleToggleFavorite = async (id: string) => {
+    if (!accessToken) return;
+
+    const isFavorited = favoriteIds.has(id);
+    const method = isFavorited ? 'DELETE' : 'POST';
+
+    try {
+      const res = await fetch(`${API_BASE}/users/me/favorites/${id}`,
+        {
+          method,
+          headers: { Authorization: `Bearer ${accessToken}` },
+        }
+      );
+
+      if (!res.ok) throw new Error(`Failed to toggle favorite`);
+
+      setFavoriteIds(prev => {
+        const newFavorites = new Set(prev);
+        if (isFavorited) {
+          newFavorites.delete(id);
+        } else {
+          newFavorites.add(id);
+        }
+        return newFavorites;
+      });
+    } catch (e: unknown) {
+      console.error(e instanceof Error ? e.message : 'Unknown error');
+    }
   };
 
   const clearFilters = () => {

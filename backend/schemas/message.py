@@ -1,7 +1,9 @@
-from typing import List, Optional
 from datetime import datetime
+from typing import List, Optional
+
 from pydantic import BaseModel
-from db.models.message import MessageType, MessageStatus
+
+from db.models.message import MessageStatus, MessageType
 from db.models.thread import ThreadStatus
 from schemas.user import UserSummary
 

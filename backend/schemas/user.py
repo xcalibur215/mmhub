@@ -1,6 +1,8 @@
-from typing import Optional
 from datetime import datetime
+from typing import Optional
+
 from pydantic import BaseModel, EmailStr
+
 from db.models.user import UserRole, UserStatus
 
 
@@ -29,6 +31,7 @@ class UserUpdate(BaseModel):
     phone: Optional[str] = None
     bio: Optional[str] = None
     avatar_url: Optional[str] = None
+    is_active: Optional[bool] = None
 
 
 # Schema for user response
@@ -54,6 +57,11 @@ UserResponse = User
 class Token(BaseModel):
     access_token: str
     token_type: str
+
+
+# Admin role update
+class RoleUpdate(BaseModel):
+    role: UserRole
 
 
 # Schema for user profile (public view)

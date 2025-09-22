@@ -1,7 +1,9 @@
 from datetime import datetime
 from enum import Enum
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text
+
+from sqlalchemy import Boolean, Column, DateTime, Integer, String, Text
 from sqlalchemy.orm import relationship
+
 from db.base import Base
 
 
@@ -9,6 +11,7 @@ class UserRole(str, Enum):
     USER = "user"
     LANDLORD = "landlord"
     AGENT = "agent"
+    MODERATOR = "moderator"
     ADMIN = "admin"
 
 
@@ -41,9 +44,19 @@ class User(Base):
 
     # Relationships
     properties = relationship("Property", back_populates="owner")
-    sent_messages = relationship("Message", foreign_keys="Message.sender_id", back_populates="sender")
-    received_messages = relationship("Message", foreign_keys="Message.recipient_id", back_populates="recipient")
-    threads = relationship("Thread", back_populates="participants")
+    sent_messages = relationship(
+        "Message", foreign_keys="Message.sender_id", back_populates="sender"
+    )
+    received_messages = relationship(
+        "Message", foreign_keys="Message.recipient_id", back_populates="recipient"
+    )
+    # Many-to-many with threads via association table
+    threads = relationship(
+        "Thread",
+        secondary="thread_participants",
+        back_populates="participants",
+        overlaps="creator",
+    )
 
     def __repr__(self):
         return f"<User(id={self.id}, email={self.email}, username={self.username})>"

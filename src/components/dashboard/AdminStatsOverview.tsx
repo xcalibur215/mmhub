@@ -78,7 +78,7 @@ const StatCard: React.FC<StatCardProps> = ({
 interface AdminApiResponse {
   user_stats: { total: number; active: number; by_role: Record<string, number> };
   property_stats: { total: number; available: number; by_type: Record<string, number> };
-  recent_activity: { users: any[]; properties: any[] };
+  recent_activity: { users: unknown[]; properties: unknown[] };
 }
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8081/api/v1';
@@ -102,8 +102,8 @@ const AdminStatsOverview: React.FC = () => {
         if (!res.ok) throw new Error(`Failed to load admin stats (${res.status})`);
         const json: AdminApiResponse = await res.json();
         if (!cancelled) setData(json);
-      } catch (e: any) {
-        if (!cancelled) setError(e.message || 'Unknown error');
+      } catch (e: unknown) {
+        if (!cancelled) setError(e instanceof Error ? e.message : 'Unknown error');
       } finally {
         if (!cancelled) setLoading(false);
       }

@@ -1,7 +1,9 @@
-from typing import List, Optional
 from datetime import datetime
+from typing import List, Optional
+
 from pydantic import BaseModel, Field
-from db.models.property import PropertyType, PropertyStatus
+
+from db.models.property import PropertyStatus, PropertyType
 from schemas.user import UserSummary
 
 
@@ -125,6 +127,7 @@ class Property(PropertyBase):
     owner_id: int
     owner: UserSummary
     photos: List[PropertyPhoto] = []
+    # Direct Amenity objects (via secondary) for convenience
     amenities: List[Amenity] = []
 
     class Config:

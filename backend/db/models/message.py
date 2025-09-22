@@ -1,7 +1,9 @@
 from datetime import datetime
 from enum import Enum
-from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, ForeignKey
+
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
+
 from db.base import Base
 
 
@@ -25,7 +27,9 @@ class Message(Base):
     id = Column(Integer, primary_key=True, index=True)
     thread_id = Column(Integer, ForeignKey("threads.id"), nullable=False)
     sender_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    recipient_id = Column(Integer, ForeignKey("users.id"), nullable=True)  # For direct messages
+    recipient_id = Column(
+        Integer, ForeignKey("users.id"), nullable=True
+    )  # For direct messages
     content = Column(Text, nullable=False)
     message_type = Column(String, default=MessageType.TEXT)
     status = Column(String, default=MessageStatus.SENT)
@@ -39,8 +43,12 @@ class Message(Base):
 
     # Relationships
     thread = relationship("Thread", back_populates="messages")
-    sender = relationship("User", foreign_keys=[sender_id], back_populates="sent_messages")
-    recipient = relationship("User", foreign_keys=[recipient_id], back_populates="received_messages")
+    sender = relationship(
+        "User", foreign_keys=[sender_id], back_populates="sent_messages"
+    )
+    recipient = relationship(
+        "User", foreign_keys=[recipient_id], back_populates="received_messages"
+    )
 
     def __repr__(self):
         return f"<Message(id={self.id}, thread_id={self.thread_id}, sender_id={self.sender_id})>"

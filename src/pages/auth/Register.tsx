@@ -100,10 +100,11 @@ const Register = () => {
       }
 
       // Auto login
-      const loggedIn = await login(formData.email, formData.password);
-      if (loggedIn) {
+      const loginResult = await login(formData.email, formData.password);
+      if (loginResult.ok) {
         toast({ title: 'Account created successfully!', description: 'Welcome to RentHub.' });
-        navigate('/dashboard');
+        const role = loginResult.user?.role;
+        navigate(role === 'admin' ? '/admin' : '/dashboard');
       } else {
         toast({ title: 'Account created, please sign in', description: 'Login manually with your credentials.' });
         navigate('/auth/login');
@@ -111,7 +112,7 @@ const Register = () => {
     } catch (error) {
       toast({
         title: "Registration failed",
-        description: (error as any)?.message || "Something went wrong. Please try again.",
+        description: (error as Error)?.message || "Something went wrong. Please try again.",
         variant: "destructive",
       });
     } finally {

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/context/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -49,148 +50,113 @@ import {
 } from 'lucide-react';
 
 interface User {
-  id: string;
-  name: string;
+  id: number;
+  username: string;
   email: string;
-  phone: string;
-  role: 'renter' | 'landlord' | 'agent' | 'admin';
-  status: 'active' | 'inactive' | 'suspended' | 'pending';
-  joinDate: string;
-  lastActive: string;
-  propertiesCount?: number;
-  avatar?: string;
-  location: string;
-  verified: boolean;
-  totalTransactions: number;
-  flaggedReports: number;
+  first_name: string;
+  last_name: string;
+  role: 'admin' | 'user' | 'agent' | 'landlord' | 'moderator';
+  is_active: boolean;
+  created_at: string;
 }
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8081/api/v1';
+
 const UserManagement: React.FC = () => {
+  const { accessToken } = useAuth();
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showUserModal, setShowUserModal] = useState(false);
 
-  // Mock data - in real app, this would come from API
-  const users: User[] = [
-    {
-      id: '1',
-      name: 'John Smith',
-      email: 'john.smith@email.com',
-      phone: '+1 (555) 123-4567',
-      role: 'landlord',
-      status: 'active',
-      joinDate: '2023-01-15',
-      lastActive: '2024-01-15',
-      propertiesCount: 12,
-      location: 'New York, NY',
-      verified: true,
-      totalTransactions: 45,
-      flaggedReports: 0
-    },
-    {
-      id: '2',
-      name: 'Sarah Johnson',
-      email: 'sarah.j@email.com',
-      phone: '+1 (555) 234-5678',
-      role: 'renter',
-      status: 'active',
-      joinDate: '2023-03-22',
-      lastActive: '2024-01-14',
-      location: 'Los Angeles, CA',
-      verified: true,
-      totalTransactions: 3,
-      flaggedReports: 0
-    },
-    {
-      id: '3',
-      name: 'Mike Chen',
-      email: 'mike.chen@email.com',
-      phone: '+1 (555) 345-6789',
-      role: 'agent',
-      status: 'active',
-      joinDate: '2022-11-08',
-      lastActive: '2024-01-15',
-      propertiesCount: 28,
-      location: 'Chicago, IL',
-      verified: true,
-      totalTransactions: 89,
-      flaggedReports: 0
-    },
-    {
-      id: '4',
-      name: 'Emily Davis',
-      email: 'emily.davis@email.com',
-      phone: '+1 (555) 456-7890',
-      role: 'renter',
-      status: 'suspended',
-      joinDate: '2023-07-12',
-      lastActive: '2024-01-10',
-      location: 'Houston, TX',
-      verified: false,
-      totalTransactions: 1,
-      flaggedReports: 3
-    },
-    {
-      id: '5',
-      name: 'David Wilson',
-      email: 'david.w@email.com',
-      phone: '+1 (555) 567-8901',
-      role: 'landlord',
-      status: 'pending',
-      joinDate: '2024-01-10',
-      lastActive: '2024-01-12',
-      propertiesCount: 0,
-      location: 'Miami, FL',
-      verified: false,
-      totalTransactions: 0,
-      flaggedReports: 0
+  useEffect(() => {
+    if (!accessToken) return;
+    let cancelled = false;
+    const fetchUsers = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch(`${API_BASE}/admin/users`, {
+          headers: { Authorization: `Bearer ${accessToken}` }
+        });
+        if (!res.ok) throw new Error(`Failed to load users (${res.status})`);
+        const json: User[] = await res.json();
+        if (!cancelled) setUsers(json);
+      } catch (e: unknown) {
+        if (!cancelled) setError(e instanceof Error ? e.message : 'Unknown error');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    fetchUsers();
+    return () => { cancelled = true; };
+  }, [accessToken]);
+
+  const handleUserAction = async (action: string, user: User) => {
+    if (!accessToken) return;
+    try {
+      if (action === 'activate' || action === 'deactivate') {
+        const res = await fetch(`${API_BASE}/users/${user.id}`,
+          {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify({ is_active: action === 'activate' }),
+          }
+        );
+        if (!res.ok) throw new Error(`Failed to ${action} user`);
+        setUsers(users.map(u => u.id === user.id ? { ...u, is_active: action === 'activate' } : u));
+      } else if (action.startsWith('role:')) {
+        const newRole = action.split(':')[1];
+        const res = await fetch(`${API_BASE}/admin/users/${user.id}/role`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+          body: JSON.stringify({ role: newRole })
+        });
+        if (!res.ok) {
+          const msg = await res.text();
+          throw new Error(msg || 'Failed to change role');
+        }
+        setUsers(users.map(u => u.id === user.id ? { ...u, role: newRole as User['role'] } : u));
+      }
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Unknown error');
     }
-  ];
+  };
 
   const getRoleColor = (role: string) => {
     switch (role) {
       case 'admin': return 'bg-purple-100 text-purple-800';
+      case 'moderator': return 'bg-indigo-100 text-indigo-800';
       case 'agent': return 'bg-blue-100 text-blue-800';
-      case 'landlord': return 'bg-green-100 text-green-800';
-      case 'renter': return 'bg-orange-100 text-orange-800';
+      case 'landlord': return 'bg-amber-100 text-amber-800';
+      case 'user': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'inactive': return 'bg-gray-100 text-gray-800';
-      case 'suspended': return 'bg-red-100 text-red-800';
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
+  const getStatusColor = (isActive: boolean) => {
+    return isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
   };
 
   const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch = user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = roleFilter === 'all' || user.role === roleFilter;
-    const matchesStatus = statusFilter === 'all' || user.status === statusFilter;
+    const matchesStatus = statusFilter === 'all' || (statusFilter === 'active' && user.is_active) || (statusFilter === 'inactive' && !user.is_active);
     return matchesSearch && matchesRole && matchesStatus;
   });
 
   const userStats = {
     total: users.length,
-    active: users.filter(u => u.status === 'active').length,
-    pending: users.filter(u => u.status === 'pending').length,
-    suspended: users.filter(u => u.status === 'suspended').length,
-    landlords: users.filter(u => u.role === 'landlord').length,
-    renters: users.filter(u => u.role === 'renter').length,
-    agents: users.filter(u => u.role === 'agent').length,
-    flagged: users.filter(u => u.flaggedReports > 0).length
-  };
-
-  const handleUserAction = (action: string, user: User) => {
-    console.log(`${action} action for user:`, user.name);
-    // In real app, make API call here
+    active: users.filter(u => u.is_active).length,
+    inactive: users.filter(u => !u.is_active).length,
   };
 
   const viewUserDetails = (user: User) => {
@@ -228,19 +194,8 @@ const UserManagement: React.FC = () => {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Pending Approval</p>
-                <p className="text-2xl font-bold text-yellow-600">{userStats.pending}</p>
-              </div>
-              <AlertTriangle className="h-8 w-8 text-yellow-600" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Flagged Users</p>
-                <p className="text-2xl font-bold text-red-600">{userStats.flagged}</p>
+                <p className="text-sm font-medium text-muted-foreground">Inactive Users</p>
+                <p className="text-2xl font-bold text-red-600">{userStats.inactive}</p>
               </div>
               <UserX className="h-8 w-8 text-red-600" />
             </div>
@@ -275,9 +230,10 @@ const UserManagement: React.FC = () => {
               <SelectContent>
                 <SelectItem value="all">All Roles</SelectItem>
                 <SelectItem value="admin">Admin</SelectItem>
+                <SelectItem value="moderator">Moderator</SelectItem>
                 <SelectItem value="agent">Agent</SelectItem>
                 <SelectItem value="landlord">Landlord</SelectItem>
-                <SelectItem value="renter">Renter</SelectItem>
+                <SelectItem value="user">User</SelectItem>
               </SelectContent>
             </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -288,8 +244,6 @@ const UserManagement: React.FC = () => {
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="active">Active</SelectItem>
                 <SelectItem value="inactive">Inactive</SelectItem>
-                <SelectItem value="suspended">Suspended</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -302,9 +256,7 @@ const UserManagement: React.FC = () => {
                   <TableHead>User</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Properties</TableHead>
-                  <TableHead>Transactions</TableHead>
-                  <TableHead>Last Active</TableHead>
+                  <TableHead>Date Joined</TableHead>
                   <TableHead className="w-[70px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -314,14 +266,11 @@ const UserManagement: React.FC = () => {
                     <TableCell>
                       <div className="flex items-center space-x-3">
                         <Avatar className="h-8 w-8">
-                          <AvatarImage src={user.avatar} alt={user.name} />
-                          <AvatarFallback>{user.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                          <AvatarFallback>{user.first_name[0]}{user.last_name[0]}</AvatarFallback>
                         </Avatar>
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="font-medium">{user.name}</span>
-                            {user.verified && <CheckCircle className="h-4 w-4 text-green-600" />}
-                            {user.flaggedReports > 0 && <AlertTriangle className="h-4 w-4 text-red-600" />}
+                            <span className="font-medium">{user.first_name} {user.last_name}</span>
                           </div>
                           <div className="text-sm text-muted-foreground">{user.email}</div>
                         </div>
@@ -333,16 +282,12 @@ const UserManagement: React.FC = () => {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge className={getStatusColor(user.status)}>
-                        {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
+                      <Badge className={getStatusColor(user.is_active)}>
+                        {user.is_active ? 'Active' : 'Inactive'}
                       </Badge>
                     </TableCell>
-                    <TableCell>
-                      {user.propertiesCount !== undefined ? user.propertiesCount : '-'}
-                    </TableCell>
-                    <TableCell>{user.totalTransactions}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {new Date(user.lastActive).toLocaleDateString()}
+                      {new Date(user.created_at).toLocaleDateString()}
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
@@ -361,14 +306,29 @@ const UserManagement: React.FC = () => {
                             <Edit className="mr-2 h-4 w-4" />
                             Edit User
                           </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleUserAction('role:admin', user)}>
+                            Make Admin
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleUserAction('role:moderator', user)}>
+                            Make Moderator
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleUserAction('role:agent', user)}>
+                            Make Agent
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleUserAction('role:landlord', user)}>
+                            Make Landlord
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleUserAction('role:user', user)}>
+                            Make User
+                          </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          {user.status === 'active' ? (
+                          {user.is_active ? (
                             <DropdownMenuItem 
-                              onClick={() => handleUserAction('suspend', user)}
+                              onClick={() => handleUserAction('deactivate', user)}
                               className="text-red-600"
                             >
                               <Ban className="mr-2 h-4 w-4" />
-                              Suspend User
+                              Deactivate User
                             </DropdownMenuItem>
                           ) : (
                             <DropdownMenuItem 
@@ -404,13 +364,11 @@ const UserManagement: React.FC = () => {
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-3">
                   <Avatar className="h-10 w-10">
-                    <AvatarImage src={selectedUser.avatar} alt={selectedUser.name} />
-                    <AvatarFallback>{selectedUser.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                    <AvatarFallback>{selectedUser.first_name[0]}{selectedUser.last_name[0]}</AvatarFallback>
                   </Avatar>
                   <div>
                     <div className="flex items-center gap-2">
-                      {selectedUser.name}
-                      {selectedUser.verified && <CheckCircle className="h-4 w-4 text-green-600" />}
+                      {selectedUser.first_name} {selectedUser.last_name}
                     </div>
                     <Badge className={getRoleColor(selectedUser.role)}>
                       {selectedUser.role.charAt(0).toUpperCase() + selectedUser.role.slice(1)}
@@ -430,54 +388,19 @@ const UserManagement: React.FC = () => {
                       <span className="font-medium">Email:</span>
                       <span>{selectedUser.email}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Phone className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">Phone:</span>
-                      <span>{selectedUser.phone}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <MapPin className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">Location:</span>
-                      <span>{selectedUser.location}</span>
-                    </div>
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-sm">
                       <Calendar className="h-4 w-4 text-muted-foreground" />
                       <span className="font-medium">Joined:</span>
-                      <span>{new Date(selectedUser.joinDate).toLocaleDateString()}</span>
+                      <span>{new Date(selectedUser.created_at).toLocaleDateString()}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <span className="font-medium">Status:</span>
-                      <Badge className={getStatusColor(selectedUser.status)}>
-                        {selectedUser.status.charAt(0).toUpperCase() + selectedUser.status.slice(1)}
+                      <Badge className={getStatusColor(selectedUser.is_active)}>
+                        {selectedUser.is_active ? 'Active' : 'Inactive'}
                       </Badge>
                     </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <span className="font-medium">Verified:</span>
-                      {selectedUser.verified ? (
-                        <CheckCircle className="h-4 w-4 text-green-600" />
-                      ) : (
-                        <XCircle className="h-4 w-4 text-red-600" />
-                      )}
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-3 gap-4 pt-4 border-t">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold">{selectedUser.totalTransactions}</div>
-                    <div className="text-sm text-muted-foreground">Transactions</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold">
-                      {selectedUser.propertiesCount !== undefined ? selectedUser.propertiesCount : 0}
-                    </div>
-                    <div className="text-sm text-muted-foreground">Properties</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-red-600">{selectedUser.flaggedReports}</div>
-                    <div className="text-sm text-muted-foreground">Reports</div>
                   </div>
                 </div>
               </div>
@@ -490,10 +413,10 @@ const UserManagement: React.FC = () => {
                   <Edit className="h-4 w-4 mr-2" />
                   Edit User
                 </Button>
-                {selectedUser.status === 'active' ? (
-                  <Button variant="destructive" onClick={() => handleUserAction('suspend', selectedUser)}>
+                {selectedUser.is_active ? (
+                  <Button variant="destructive" onClick={() => handleUserAction('deactivate', selectedUser)}>
                     <Ban className="h-4 w-4 mr-2" />
-                    Suspend
+                    Deactivate
                   </Button>
                 ) : (
                   <Button onClick={() => handleUserAction('activate', selectedUser)}>

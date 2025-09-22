@@ -4,22 +4,22 @@ Sample data generator for MM Hub Real Estate Platform.
 This script generates 100 realistic property listings with associated data.
 """
 
-import random
 import os
+import random
 import sys
-from datetime import datetime, timedelta
-from decimal import Decimal
+from datetime import datetime
+
 from faker import Faker
 from sqlalchemy.orm import Session
 
 # Add the backend directory to the Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from db.base import SessionLocal
-from db.models import User, Property, Amenity, PropertyPhoto, PropertyAmenity
 from core.security import get_password_hash
+from db.base import SessionLocal
+from db.models import Amenity, Property, PropertyAmenity, PropertyPhoto, User
+from db.models.property import PropertyStatus, PropertyType
 from db.models.user import UserRole, UserStatus
-from db.models.property import PropertyType, PropertyStatus
 
 fake = Faker()
 
@@ -59,14 +59,36 @@ CITIES_COORDS = {
 }
 
 STATES = {
-    "New York": "NY", "Los Angeles": "CA", "Chicago": "IL", "Houston": "TX",
-    "Phoenix": "AZ", "Philadelphia": "PA", "San Antonio": "TX", "San Diego": "CA",
-    "Dallas": "TX", "San Jose": "CA", "Austin": "TX", "Jacksonville": "FL",
-    "Fort Worth": "TX", "Columbus": "OH", "Charlotte": "NC", "San Francisco": "CA",
-    "Indianapolis": "IN", "Seattle": "WA", "Denver": "CO", "Boston": "MA",
-    "El Paso": "TX", "Detroit": "MI", "Nashville": "TN", "Portland": "OR",
-    "Memphis": "TN", "Oklahoma City": "OK", "Las Vegas": "NV", "Louisville": "KY",
-    "Baltimore": "MD", "Milwaukee": "WI",
+    "New York": "NY",
+    "Los Angeles": "CA",
+    "Chicago": "IL",
+    "Houston": "TX",
+    "Phoenix": "AZ",
+    "Philadelphia": "PA",
+    "San Antonio": "TX",
+    "San Diego": "CA",
+    "Dallas": "TX",
+    "San Jose": "CA",
+    "Austin": "TX",
+    "Jacksonville": "FL",
+    "Fort Worth": "TX",
+    "Columbus": "OH",
+    "Charlotte": "NC",
+    "San Francisco": "CA",
+    "Indianapolis": "IN",
+    "Seattle": "WA",
+    "Denver": "CO",
+    "Boston": "MA",
+    "El Paso": "TX",
+    "Detroit": "MI",
+    "Nashville": "TN",
+    "Portland": "OR",
+    "Memphis": "TN",
+    "Oklahoma City": "OK",
+    "Las Vegas": "NV",
+    "Louisville": "KY",
+    "Baltimore": "MD",
+    "Milwaukee": "WI",
 }
 
 AMENITIES_DATA = [
@@ -80,10 +102,20 @@ AMENITIES_DATA = [
     ("Microwave", "Built-in microwave", "📱", "kitchen"),
     ("Closet", "Spacious closet", "👗", "storage"),
     ("Fireplace", "Wood or gas fireplace", "🔥", "comfort"),
-    ("Stainless Steel Appliances", "Modern stainless steel appliances", "✨", "kitchen"),
+    (
+        "Stainless Steel Appliances",
+        "Modern stainless steel appliances",
+        "✨",
+        "kitchen",
+    ),
     ("Granite Countertops", "Premium granite countertops", "💎", "kitchen"),
     ("High Ceilings", "9+ foot ceilings", "⬆️", "architecture"),
-    ("Floor-to-Ceiling Windows", "Large windows with natural light", "🪟", "architecture"),
+    (
+        "Floor-to-Ceiling Windows",
+        "Large windows with natural light",
+        "🪟",
+        "architecture",
+    ),
     ("Elevator", "Elevator access", "🛗", "building"),
     ("Storage Unit", "Additional storage space", "📦", "storage"),
     ("Garden/Yard", "Private or shared garden space", "🌻", "outdoor"),
@@ -117,7 +149,7 @@ PROPERTY_DESCRIPTIONS = [
 def create_sample_users(db: Session, count: int = 25) -> list:
     """Create sample users with different roles."""
     users = []
-    
+
     # Create admin user
     admin_user = User(
         email="admin@mmhub.com",
@@ -129,15 +161,15 @@ def create_sample_users(db: Session, count: int = 25) -> list:
         status=UserStatus.ACTIVE,
         is_verified=True,
         is_active=True,
-        created_at=datetime.utcnow()
+        created_at=datetime.utcnow(),
     )
     db.add(admin_user)
     users.append(admin_user)
-    
+
     # Create landlords and agents
     for i in range(count):
         role = random.choice([UserRole.LANDLORD, UserRole.AGENT, UserRole.USER])
-        
+
         user = User(
             email=fake.email(),
             username=fake.user_name(),
@@ -150,11 +182,11 @@ def create_sample_users(db: Session, count: int = 25) -> list:
             bio=fake.text(max_nb_chars=200) if random.random() > 0.3 else None,
             is_verified=random.choice([True, False]),
             is_active=True,
-            created_at=fake.date_time_between(start_date='-2y', end_date='now')
+            created_at=fake.date_time_between(start_date="-2y", end_date="now"),
         )
         db.add(user)
         users.append(user)
-    
+
     db.commit()
     return users
 
@@ -162,40 +194,46 @@ def create_sample_users(db: Session, count: int = 25) -> list:
 def create_amenities(db: Session) -> list:
     """Create standard amenities."""
     amenities = []
-    
+
     for name, description, icon, category in AMENITIES_DATA:
         amenity = Amenity(
             name=name,
             description=description,
             icon=icon,
             category=category,
-            is_active=True
+            is_active=True,
         )
         db.add(amenity)
         amenities.append(amenity)
-    
+
     db.commit()
     return amenities
 
 
-def create_sample_properties(db: Session, users: list, amenities: list, count: int = 100) -> list:
+def create_sample_properties(
+    db: Session, users: list, amenities: list, count: int = 100
+) -> list:
     """Create sample properties."""
     properties = []
-    
+
     # Filter users who can own properties (landlords, agents, admin)
-    property_owners = [u for u in users if u.role in [UserRole.LANDLORD, UserRole.AGENT, UserRole.ADMIN]]
-    
+    property_owners = [
+        u
+        for u in users
+        if u.role in [UserRole.LANDLORD, UserRole.AGENT, UserRole.ADMIN]
+    ]
+
     for i in range(count):
         city = random.choice(list(CITIES_COORDS.keys()))
         lat, lon = CITIES_COORDS[city]
         state = STATES[city]
-        
+
         # Add some random variation to coordinates
         lat += random.uniform(-0.1, 0.1)
         lon += random.uniform(-0.1, 0.1)
-        
+
         property_type = random.choice(list(PropertyType))
-        
+
         # Adjust property details based on type
         if property_type == PropertyType.STUDIO:
             bedrooms = 0
@@ -217,24 +255,28 @@ def create_sample_properties(db: Session, users: list, amenities: list, count: i
             bedrooms = random.randint(1, 4)
             bathrooms = random.choice([1, 1.5, 2, 2.5, 3])
             sq_ft = random.randint(700, 3000)
-        
+
         # Calculate rent based on location and size
         base_rent = sq_ft * random.uniform(1.5, 4.0)
         if city in ["San Francisco", "New York", "San Jose"]:
             base_rent *= random.uniform(1.5, 2.5)
         elif city in ["Los Angeles", "Seattle", "Boston"]:
             base_rent *= random.uniform(1.2, 1.8)
-        
+
         rent_price = round(base_rent, 2)
-        
+
         property_obj = Property(
             title=f"{random.choice(['Beautiful', 'Stunning', 'Modern', 'Spacious', 'Cozy', 'Luxury'])} "
-                  f"{bedrooms if bedrooms > 0 else 'Studio'} "
-                  f"{'Bed' if bedrooms == 1 else 'Bedroom' if bedrooms > 1 else ''} "
-                  f"{property_type.value.title()} in {city}".strip(),
+            f"{bedrooms if bedrooms > 0 else 'Studio'} "
+            f"{'Bed' if bedrooms == 1 else 'Bedroom' if bedrooms > 1 else ''} "
+            f"{property_type.value.title()} in {city}".strip(),
             description=random.choice(PROPERTY_DESCRIPTIONS),
             property_type=property_type,
-            status=random.choice([PropertyStatus.AVAILABLE, PropertyStatus.RENTED]) if random.random() > 0.1 else PropertyStatus.AVAILABLE,
+            status=(
+                random.choice([PropertyStatus.AVAILABLE, PropertyStatus.RENTED])
+                if random.random() > 0.1
+                else PropertyStatus.AVAILABLE
+            ),
             address=fake.street_address(),
             city=city,
             state=state,
@@ -245,10 +287,22 @@ def create_sample_properties(db: Session, users: list, amenities: list, count: i
             bedrooms=bedrooms,
             bathrooms=bathrooms,
             square_feet=sq_ft,
-            lot_size=random.randint(1000, 10000) if property_type == PropertyType.HOUSE else None,
+            lot_size=(
+                random.randint(1000, 10000)
+                if property_type == PropertyType.HOUSE
+                else None
+            ),
             year_built=random.randint(1950, 2024),
-            floor_number=random.randint(1, 20) if property_type in [PropertyType.APARTMENT, PropertyType.CONDO] else None,
-            total_floors=random.randint(1, 30) if property_type in [PropertyType.APARTMENT, PropertyType.CONDO] else None,
+            floor_number=(
+                random.randint(1, 20)
+                if property_type in [PropertyType.APARTMENT, PropertyType.CONDO]
+                else None
+            ),
+            total_floors=(
+                random.randint(1, 30)
+                if property_type in [PropertyType.APARTMENT, PropertyType.CONDO]
+                else None
+            ),
             rent_price=rent_price,
             security_deposit=rent_price * random.uniform(0.5, 2.0),
             is_furnished=random.choice([True, False]),
@@ -258,17 +312,17 @@ def create_sample_properties(db: Session, users: list, amenities: list, count: i
             utilities_included=random.choice([True, False]),
             min_lease_term=random.choice([1, 3, 6, 12]),
             max_lease_term=random.choice([12, 24, 36]),
-            available_from=fake.date_between(start_date='today', end_date='+6m'),
+            available_from=fake.date_between(start_date="today", end_date="+6m"),
             views_count=random.randint(0, 500),
             is_featured=random.random() < 0.1,  # 10% featured
             is_active=True,
-            created_at=fake.date_time_between(start_date='-1y', end_date='now'),
-            owner_id=random.choice(property_owners).id
+            created_at=fake.date_time_between(start_date="-1y", end_date="now"),
+            owner_id=random.choice(property_owners).id,
         )
-        
+
         db.add(property_obj)
         properties.append(property_obj)
-    
+
     db.commit()
     return properties
 
@@ -287,11 +341,11 @@ def create_property_photos(db: Session, properties: list):
         "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9",
         "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c",
     ]
-    
+
     for property_obj in properties:
         # Each property gets 2-8 photos
         num_photos = random.randint(2, 8)
-        
+
         for i in range(num_photos):
             photo = PropertyPhoto(
                 property_id=property_obj.id,
@@ -302,10 +356,10 @@ def create_property_photos(db: Session, properties: list):
                 is_primary=(i == 0),
                 width=800,
                 height=600,
-                created_at=datetime.utcnow()
+                created_at=datetime.utcnow(),
             )
             db.add(photo)
-    
+
     db.commit()
 
 
@@ -315,55 +369,56 @@ def create_property_amenities(db: Session, properties: list, amenities: list):
         # Each property gets 3-12 random amenities
         num_amenities = random.randint(3, 12)
         selected_amenities = random.sample(amenities, num_amenities)
-        
+
         for amenity in selected_amenities:
             property_amenity = PropertyAmenity(
-                property_id=property_obj.id,
-                amenity_id=amenity.id
+                property_id=property_obj.id, amenity_id=amenity.id
             )
             db.add(property_amenity)
-    
+
     db.commit()
 
 
 def main():
     """Generate all sample data."""
     db = SessionLocal()
-    
+
     try:
         print("🏠 Generating MM Hub sample data...")
-        
+
         print("👥 Creating users...")
         users = create_sample_users(db, 25)
         print(f"✅ Created {len(users)} users")
-        
+
         print("🏷️ Creating amenities...")
         amenities = create_amenities(db)
         print(f"✅ Created {len(amenities)} amenities")
-        
+
         print("🏘️ Creating properties...")
         properties = create_sample_properties(db, users, amenities, 100)
         print(f"✅ Created {len(properties)} properties")
-        
+
         print("📸 Creating property photos...")
         create_property_photos(db, properties)
         print("✅ Created property photos")
-        
+
         print("🔗 Creating property amenities...")
         create_property_amenities(db, properties, amenities)
         print("✅ Created property amenities")
-        
+
         print("🎉 Sample data generation complete!")
         print(f"📊 Summary:")
-        print(f"   - {len(users)} users (1 admin, {len([u for u in users if u.role == UserRole.LANDLORD])} landlords, {len([u for u in users if u.role == UserRole.AGENT])} agents)")
+        print(
+            f"   - {len(users)} users (1 admin, {len([u for u in users if u.role == UserRole.LANDLORD])} landlords, {len([u for u in users if u.role == UserRole.AGENT])} agents)"
+        )
         print(f"   - {len(amenities)} amenities")
         print(f"   - {len(properties)} properties across {len(CITIES_COORDS)} cities")
-        print(f"   - Property photos and amenity associations")
-        
+        print("   - Property photos and amenity associations")
+
         print("\n🔑 Admin credentials:")
         print("   Email: admin@mmhub.com")
         print("   Password: admin123")
-        
+
     except Exception as e:
         print(f"❌ Error generating sample data: {e}")
         db.rollback()

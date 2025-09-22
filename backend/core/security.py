@@ -1,15 +1,20 @@
 from datetime import datetime, timedelta
-from typing import Any, Union, Optional
-from jose import jwt, JWTError
+from typing import Any, Optional, Union
+
+from jose import JWTError, jwt
 from passlib.context import CryptContext
+
 from core.config import settings
 
 # Temporary compatibility shim for bcrypt>=4 where __about__.__version__ was removed
 try:  # pragma: no cover - defensive
     import bcrypt  # type: ignore
+
     if not hasattr(bcrypt, "__about__") and hasattr(bcrypt, "__version__"):
+
         class _BcryptAbout:  # minimal stub so passlib can read version
             __version__ = bcrypt.__version__  # type: ignore[attr-defined]
+
         bcrypt.__about__ = _BcryptAbout()  # type: ignore[attr-defined]
 except Exception:  # noqa: BLE001
     # If anything goes wrong we silently continue; passlib will fall back to pure python backend
@@ -31,14 +36,14 @@ def create_access_token(
         expire = datetime.utcnow() + timedelta(
             minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
         )
-    
+
     to_encode = {
         "exp": expire,
         "sub": str(subject),
         "iss": settings.JWT_ISSUER,
-        "iat": datetime.utcnow()
+        "iat": datetime.utcnow(),
     }
-    
+
     encoded_jwt = jwt.encode(
         to_encode, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM
     )
@@ -50,15 +55,15 @@ def create_refresh_token(subject: Union[str, Any]) -> str:
     Create a JWT refresh token.
     """
     expire = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
-    
+
     to_encode = {
         "exp": expire,
         "sub": str(subject),
         "iss": settings.JWT_ISSUER,
         "iat": datetime.utcnow(),
-        "type": "refresh"
+        "type": "refresh",
     }
-    
+
     encoded_jwt = jwt.encode(
         to_encode, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM
     )

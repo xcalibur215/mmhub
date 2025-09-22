@@ -25,15 +25,16 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      const ok = await login(formData.email, formData.password);
-      if (ok) {
+      const result = await login(formData.email, formData.password);
+      if (result.ok) {
         toast({ title: "Welcome back!", description: "Signed in successfully." });
-        navigate("/dashboard");
+        const role = result.user?.role;
+        navigate(role === 'admin' ? '/admin' : '/dashboard');
       } else {
         toast({ title: "Sign in failed", description: "Invalid credentials.", variant: "destructive" });
       }
     } catch (error) {
-      toast({ title: "Sign in error", description: (error as any)?.message || 'Unexpected error', variant: "destructive" });
+      toast({ title: "Sign in error", description: (error as Error)?.message || 'Unexpected error', variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
