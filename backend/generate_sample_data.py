@@ -12,6 +12,10 @@ from datetime import datetime
 from faker import Faker
 from sqlalchemy.orm import Session
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 # Add the backend directory to the Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
@@ -149,45 +153,57 @@ PROPERTY_DESCRIPTIONS = [
 def create_sample_users(db: Session, count: int = 25) -> list:
     """Create sample users with different roles."""
     users = []
+    
+    # Hash a common password
+    hashed_password = get_password_hash("password123")
 
-    # Create admin user
+    # Create Admin User
     admin_user = User(
-        email="admin@mmhub.com",
-        username="admin",
-        hashed_password=get_password_hash("admin123"),
-        first_name="Admin",
-        last_name="User",
-        role=UserRole.ADMIN,
-        status=UserStatus.ACTIVE,
-        is_verified=True,
-        is_active=True,
-        created_at=datetime.utcnow(),
+        email="admin@mmhub.com", username="admin", hashed_password=get_password_hash("admin123"),
+        first_name="Admin", last_name="User", role=UserRole.ADMIN, status=UserStatus.ACTIVE, is_verified=True
     )
-    db.add(admin_user)
     users.append(admin_user)
 
-    # Create landlords and agents
-    for i in range(count):
-        role = random.choice([UserRole.LANDLORD, UserRole.AGENT, UserRole.USER])
+    # Create Renter User
+    renter_user = User(
+        email="renter@mmhub.com", username="renter", hashed_password=hashed_password,
+        first_name="Ricky", last_name="Renter", role=UserRole.USER, status=UserStatus.ACTIVE, is_verified=True
+    )
+    users.append(renter_user)
 
+    # Create Landlord User
+    landlord_user = User(
+        email="landlord@mmhub.com", username="landlord", hashed_password=hashed_password,
+        first_name="Larry", last_name="Landlord", role=UserRole.LANDLORD, status=UserStatus.ACTIVE, is_verified=True
+    )
+    users.append(landlord_user)
+
+    # Create Agent User
+    agent_user = User(
+        email="agent@mmhub.com", username="agent", hashed_password=hashed_password,
+        first_name="Agnes", last_name="Agent", role=UserRole.AGENT, status=UserStatus.ACTIVE, is_verified=True
+    )
+    users.append(agent_user)
+
+    # Create a few other random users
+    for _ in range(count - 4):
+        role = random.choice([UserRole.USER, UserRole.LANDLORD, UserRole.AGENT])
         user = User(
-            email=fake.email(),
-            username=fake.user_name(),
-            hashed_password=get_password_hash("password123"),
-            first_name=fake.first_name(),
-            last_name=fake.last_name(),
-            phone=fake.phone_number(),
-            role=role,
-            status=UserStatus.ACTIVE,
-            bio=fake.text(max_nb_chars=200) if random.random() > 0.3 else None,
-            is_verified=random.choice([True, False]),
-            is_active=True,
-            created_at=fake.date_time_between(start_date="-2y", end_date="now"),
+            email=fake.unique.email(), username=fake.unique.user_name(), hashed_password=hashed_password,
+            first_name=fake.first_name(), last_name=fake.last_name(), phone=fake.phone_number(),
+            role=role, status=UserStatus.ACTIVE, bio=fake.text(max_nb_chars=150),
+            is_verified=True, created_at=fake.date_time_this_year()
         )
-        db.add(user)
         users.append(user)
 
+    for user in users:
+        db.add(user)
     db.commit()
+
+    # Refresh user objects to get IDs
+    for user in users:
+        db.refresh(user)
+        
     return users
 
 
@@ -379,8 +395,15 @@ def create_property_amenities(db: Session, properties: list, amenities: list):
     db.commit()
 
 
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from db.base import Base, engine
+
 def main():
     """Generate all sample data."""
+    Base.metadata.create_all(bind=engine)
     db = SessionLocal()
 
     try:

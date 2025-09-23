@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Header from "@/components/Layout/Header";
 import { AuthProvider } from "./context/AuthContext";
 import Index from "./pages/Index";
+import HomeLanding from "@/components/Home/HomeLanding";
 import Listings from "./pages/Listings";
 import PropertyDetail from "./pages/PropertyDetail";
 import Login from "./pages/auth/Login";
@@ -20,6 +21,8 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -31,7 +34,8 @@ const App = () => (
             <Header />
             <main>
               <Routes>
-                <Route path="/" element={<Index />} />
+                <Route path="/" element={<HomeLanding />} />
+                <Route path="/home" element={<Index />} />
                 <Route path="/listings" element={<Listings />} />
                 <Route path="/listings/:id" element={<PropertyDetail />} />
                 <Route path="/auth/login" element={<Login />} />
