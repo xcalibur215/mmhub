@@ -45,6 +45,8 @@ const featuredProperties = [
 ];
 
 const Index = () => {
+  console.log('Index component rendering...');
+  
   const handleToggleFavorite = (id: string) => {
     // TODO: Implement favorite toggle functionality
     console.log('Toggle favorite for property:', id);
@@ -59,7 +61,7 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Why Choose RentHub?
+              Why Choose MM Hub?
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               We're committed to making your rental journey smooth, secure, and successful.
@@ -154,7 +156,7 @@ const Index = () => {
               Ready to Find Your Perfect Home?
             </h2>
             <p className="text-xl mb-8 text-white/90">
-              Join thousands of satisfied renters who found their dream homes through RentHub.
+              Join thousands of satisfied renters who found their dream homes through MM Hub.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button variant="secondary" size="lg" asChild className="text-primary">
