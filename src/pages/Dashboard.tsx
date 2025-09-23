@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -152,10 +153,10 @@ const Dashboard = () => {
             </div>
           </div>
           <Button variant="outline" size="sm" asChild>
-            <a href="/settings">
+            <Link to="/settings">
               <Settings className="w-4 h-4 mr-2" />
               Account Settings
-            </a>
+            </Link>
           </Button>
         </div>
 
@@ -180,10 +181,10 @@ const Dashboard = () => {
                   className="w-full justify-start h-auto py-3"
                   asChild
                 >
-                  <a href={action.href}>
+                  <Link to={action.href}>
                     <action.icon className="w-5 h-5 mr-3" />
                     <span>{action.label}</span>
-                  </a>
+                  </Link>
                 </Button>
               ))}
             </CardContent>
@@ -272,8 +273,8 @@ const Dashboard = () => {
                     <p className="text-muted-foreground mb-4">
                       View and manage your properties here.
                     </p>
-                    <Button variant="hero" asChild>
-                      <a href="/listings">Browse Properties</a>
+                    <Button variant="default" asChild>
+                      <Link to="/listings">Browse Properties</Link>
                     </Button>
                   </div>
                 </CardContent>
