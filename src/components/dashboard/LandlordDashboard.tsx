@@ -79,7 +79,14 @@ const LandlordDashboard = ({ user }: LandlordDashboardProps) => {
     { icon: Settings, label: "Settings", href: "/settings", description: "Manage your account settings" }
   ];
 
-  const [myProperties, setMyProperties] = useState<any[]>([]);
+  interface MyProperty {
+    id: number;
+    title: string;
+    location?: string;
+    price?: number;
+    status?: string;
+  }
+  const [myProperties, setMyProperties] = useState<MyProperty[]>([]);
 
   useEffect(() => {
     // Simulate loading stats
@@ -93,7 +100,7 @@ const LandlordDashboard = ({ user }: LandlordDashboardProps) => {
     const fetchMyProperties = async () => {
       try {
         const response = await fetch(`/api/v1/properties/my/properties`);
-        const data = await response.json();
+        const data: MyProperty[] = await response.json();
         setMyProperties(data || []);
       } catch (error) {
         console.error("Error fetching my properties:", error);

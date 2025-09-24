@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,7 +25,7 @@ const FlagsList: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchFlags = async () => {
+  const fetchFlags = useCallback(async () => {
     if (!accessToken) return;
     setLoading(true); setError(null);
     try {
@@ -35,12 +35,13 @@ const FlagsList: React.FC = () => {
       if (!res.ok) throw new Error(`Failed to fetch flags (${res.status})`);
       const data: Flag[] = await res.json();
       setFlags(data);
-    } catch (e: any) {
-      setError(e.message || 'Unknown error');
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Unknown error';
+      setError(msg);
     } finally { setLoading(false); }
-  };
+  }, [accessToken]);
 
-  useEffect(() => { void fetchFlags(); }, [accessToken]);
+  useEffect(() => { void fetchFlags(); }, [fetchFlags]);
 
   const resolve = async (flag: Flag, status: 'resolved'|'dismissed') => {
     if (!accessToken) return;
@@ -52,8 +53,9 @@ const FlagsList: React.FC = () => {
       });
       if (!res.ok) throw new Error(`Failed to update flag (${res.status})`);
       setFlags(flags.filter(f => f.id !== flag.id));
-    } catch (e: any) {
-      setError(e.message || 'Update failed');
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Update failed';
+      setError(msg);
     }
   };
 

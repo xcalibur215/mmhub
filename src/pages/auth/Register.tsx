@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Home, Eye, EyeOff, User, Building, Users } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 
 const Register = () => {
@@ -28,87 +28,50 @@ const Register = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const roleOptions = [
-    { value: "user", label: "Renter", description: "Looking for a place to rent", icon: User },
+    { value: "renter", label: "Renter", description: "Looking for a place to rent", icon: User },
     { value: "landlord", label: "Landlord", description: "I own rental properties", icon: Building },
     { value: "agent", label: "Agent", description: "I manage properties for others", icon: Users },
   ];
-  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Validation
     if (formData.password !== formData.confirmPassword) {
-      toast({
-        title: "Password mismatch",
-        description: "Please make sure your passwords match.",
-        variant: "destructive",
-      });
+      toast({ title: "Password mismatch", description: "Please make sure your passwords match.", variant: "destructive" });
       setIsLoading(false);
       return;
     }
 
     if (!formData.agreedToTerms) {
-      toast({
-        title: "Terms required",
-        description: "Please accept the terms and conditions to continue.",
-        variant: "destructive",
-      });
+      toast({ title: "Terms required", description: "Please accept the terms and conditions to continue.", variant: "destructive" });
       setIsLoading(false);
       return;
     }
 
     try {
-      // Build username from email local part
-      const emailLocal = formData.email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '').slice(0, 20) || 'user';
-      let attemptUsername = emailLocal;
-      let registered = false;
-      let attempt = 0;
-      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8081/api/v1';
-      let lastError: string | null = null;
-      while (!registered && attempt < 2) {
-        const payload = {
-          email: formData.email,
-            username: attemptUsername,
+      const username = formData.email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '').slice(0, 20) || 'user';
+
+      const { error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            username: username,
             first_name: formData.firstName,
             last_name: formData.lastName,
-            phone: null,
-            password: formData.password,
-            role: formData.role || undefined
-        };
-        const res = await fetch(`${API_BASE}/auth/register`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        if (res.ok) {
-          registered = true;
-          break;
-        } else {
-          const errJson = await res.json().catch(() => ({}));
-          lastError = errJson.detail || `Registration failed (${res.status})`;
-          // If duplicate username try adding random suffix once
-          if (lastError && /username/i.test(lastError) && attempt === 0) {
-            attemptUsername = `${emailLocal}${Math.floor(Math.random()*1000)}`.slice(0,24);
-          }
-          attempt++;
-        }
-      }
-      if (!registered) {
-        throw new Error(lastError || 'Registration failed');
+            role: formData.role || 'renter',
+          },
+        },
+      });
+
+      if (error) {
+        throw error;
       }
 
-      // Auto login
-      const loginResult = await login(formData.email, formData.password);
-      if (loginResult.ok) {
-        toast({ title: 'Account created successfully!', description: 'Welcome to RentHub.' });
-        const role = loginResult.user?.role;
-        navigate(role === 'admin' ? '/admin' : '/dashboard');
-      } else {
-        toast({ title: 'Account created, please sign in', description: 'Login manually with your credentials.' });
-        navigate('/auth/login');
-      }
+      toast({ title: 'Account created successfully!', description: 'Welcome to RentHub. Please check your email for verification.' });
+      navigate('/dashboard');
+
     } catch (error) {
       toast({
         title: "Registration failed",

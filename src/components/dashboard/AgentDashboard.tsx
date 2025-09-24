@@ -80,7 +80,14 @@ const AgentDashboard = ({ user }: AgentDashboardProps) => {
     { icon: Settings, label: "Settings", href: "/settings", description: "Manage your account settings" }
   ];
 
-  const [myListings, setMyListings] = useState<any[]>([]);
+  interface ListingSummary {
+    id: number;
+    title: string;
+    location?: string;
+    price?: number;
+    status?: string;
+  }
+  const [myListings, setMyListings] = useState<ListingSummary[]>([]);
 
   useEffect(() => {
     // Simulate loading stats
@@ -94,7 +101,7 @@ const AgentDashboard = ({ user }: AgentDashboardProps) => {
     const fetchMyListings = async () => {
       try {
         const response = await fetch(`/api/v1/properties/my/properties`);
-        const data = await response.json();
+        const data: ListingSummary[] = await response.json();
         setMyListings(data || []);
       } catch (error) {
         console.error("Error fetching my listings:", error);

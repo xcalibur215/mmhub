@@ -20,18 +20,17 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      const result = await login(formData.email, formData.password);
-      if (result.ok) {
+      const { ok, error } = await login(formData.email, formData.password);
+      if (ok) {
         toast({ title: "Welcome back!", description: "Signed in successfully." });
-        const role = result.user?.role;
-        navigate(role === 'admin' ? '/admin' : '/dashboard');
+        navigate('/dashboard');
       } else {
-        toast({ title: "Sign in failed", description: "Invalid credentials.", variant: "destructive" });
+        toast({ title: "Sign in failed", description: error?.message || "Invalid credentials.", variant: "destructive" });
       }
     } catch (error) {
       toast({ title: "Sign in error", description: (error as Error)?.message || 'Unexpected error', variant: "destructive" });

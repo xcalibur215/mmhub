@@ -2,14 +2,12 @@ import { useAuth } from "@/context/AuthContext";
 import RenterDashboard from "@/components/dashboard/RenterDashboard";
 import LandlordDashboard from "@/components/dashboard/LandlordDashboard";
 import AgentDashboard from "@/components/dashboard/AgentDashboard";
-import LandlordDashboard from "@/components/dashboard/LandlordDashboard";
-import AgentDashboard from "@/components/dashboard/AgentDashboard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
 
 const Dashboard = () => {
-  const { user, isLoading } = useAuth();
+  const { user, profile, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -22,7 +20,7 @@ const Dashboard = () => {
     );
   }
 
-  if (!user) {
+  if (!user || !profile) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Card className="w-96">
@@ -43,27 +41,27 @@ const Dashboard = () => {
   }
 
   // Route to appropriate dashboard based on user role
-  switch (user.role) {
-    case 'user':
-      return <RenterDashboard user={user} />;
+  switch (profile.role) {
+    case 'renter':
+      return <RenterDashboard user={user} profile={profile} />;
     case 'landlord':
-      return <LandlordDashboard user={user} />;
+      return <LandlordDashboard user={user} profile={profile} />;
     case 'agent':
-      return <AgentDashboard user={user} />;
+      return <AgentDashboard user={user} profile={profile} />;
     default:
       return (
         <div className="min-h-screen bg-background flex items-center justify-center">
           <Card className="w-96">
             <CardHeader>
               <CardTitle>Unknown Role</CardTitle>
-              <CardDescription>
+            <CardDescription>
                 Your account role is not recognized.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex items-center space-x-2 mb-4">
                 <span>Current role:</span>
-                <Badge variant="outline">{user.role}</Badge>
+                <Badge variant="outline">{profile.role}</Badge>
               </div>
               <p className="text-muted-foreground">
                 Please contact support for assistance.

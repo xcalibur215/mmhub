@@ -7,6 +7,7 @@ import Header from "@/components/Layout/Header";
 import { AuthProvider } from "./context/AuthContext";
 import Index from "./pages/Index";
 import HomeLanding from "@/components/Home/HomeLanding";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import Listings from "./pages/Listings";
 import PropertyDetail from "./pages/PropertyDetail";
 import Login from "./pages/auth/Login";
@@ -26,31 +27,33 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <AuthProvider>
-        <BrowserRouter>
-          <div className="min-h-screen bg-background">
-            <Header />
-            <main>
-              <Routes>
-                <Route path="/" element={<HomeLanding />} />
-                <Route path="/home" element={<Index />} />
-                <Route path="/listings" element={<Listings />} />
-                <Route path="/listings/:id" element={<PropertyDetail />} />
-                <Route path="/auth/login" element={<Login />} />
-                <Route path="/auth/register" element={<Register />} />
-                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-                <Route path="/favorites" element={<Favorites />} />
-                <Route path="/messages" element={<Messages />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </main>
-          </div>
-        </BrowserRouter>
-      </AuthProvider>
+      <ErrorBoundary>
+        <Toaster />
+        <Sonner />
+        <AuthProvider>
+          <BrowserRouter>
+            <div className="min-h-screen bg-background">
+              <Header />
+              <main>
+                <Routes>
+                  <Route path="/" element={<HomeLanding />} />
+                  <Route path="/home" element={<Index />} />
+                  <Route path="/listings" element={<Listings />} />
+                  <Route path="/listings/:id" element={<PropertyDetail />} />
+                  <Route path="/auth/login" element={<Login />} />
+                  <Route path="/auth/register" element={<Register />} />
+                  <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                  <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+                  <Route path="/favorites" element={<Favorites />} />
+                  <Route path="/messages" element={<Messages />} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </main>
+            </div>
+          </BrowserRouter>
+        </AuthProvider>
+      </ErrorBoundary>
     </TooltipProvider>
   </QueryClientProvider>
 );
