@@ -24,6 +24,8 @@ const Listings = () => {
     propertyType: "",
   });
   const [showFilters, setShowFilters] = useState(false);
+  const { user } = useAuth();
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const fetchProperties = async () => {
@@ -36,8 +38,45 @@ const Listings = () => {
           .order('created_at', { ascending: false });
         
         if (error) throw error;
-        setProperties(data || []);
-        setFilteredProperties(data || []);
+        
+        // Transform data to match PropertyCardProps interface
+        const transformedData = data?.map(property => ({
+          id: property.id,
+          title: property.title,
+          monthlyRent: property.monthly_rent || 0,
+          securityDeposit: property.security_deposit,
+          bedrooms: property.bedrooms || 0,
+          bathrooms: property.bathrooms || 0,
+          squareFeet: property.square_feet,
+          location: property.location || '',
+          imageUrl: property.image_url || property.image_urls?.[0],
+          propertyType: property.property_type || '',
+          listedAt: property.created_at || new Date().toISOString(),
+          isFavorited: false
+        })) || [];
+
+        setProperties(transformedData);
+        setFilteredProperties(transformedData);
+        
+        // Fetch user favorites if logged in
+        if (user) {
+          const { data: favorites } = await supabase
+            .from('user_favorites')
+            .select('property_id')
+            .eq('user_id', user.id);
+          
+          if (favorites) {
+            const favoriteSet = new Set(favorites.map(f => f.property_id));
+            setFavoriteIds(favoriteSet);
+            
+            // Update properties with favorite status
+            const updatedProperties = transformedData.map(property => ({
+              ...property,
+              isFavorited: favoriteSet.has(property.id)
+            }));
+            setFilteredProperties(updatedProperties);
+          }
+        }
       } catch (e: unknown) {
         setError(e instanceof Error ? e.message : 'Unknown error');
       } finally {
@@ -45,13 +84,11 @@ const Listings = () => {
       }
     };
     fetchProperties();
-  }, []);
+  }, [user]);
 
   const handleFilterChange = (key: string, value: string | number[]) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
   };
-
-  const { user } = useAuth();
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
 
   const handleToggleFavorite = async (id: string) => {
@@ -230,7 +267,32 @@ const Listings = () => {
 
           {/* Results */}
           <div className="lg:col-span-3">
-            {filteredProperties.length === 0 ? (
+            {loading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <div key={index} className="animate-pulse">
+                    <div className="bg-muted rounded-lg h-64 mb-4"></div>
+                    <div className="bg-muted rounded h-4 mb-2"></div>
+                    <div className="bg-muted rounded h-4 w-2/3"></div>
+                  </div>
+                ))}
+              </div>
+            ) : error ? (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Search className="w-8 h-8 text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  Error loading properties
+                </h3>
+                <p className="text-muted-foreground mb-4">
+                  {error}
+                </p>
+                <Button variant="premium" onClick={() => window.location.reload()}>
+                  Try Again
+                </Button>
+              </div>
+            ) : filteredProperties.length === 0 ? (
               <div className="text-center py-12">
                 <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
                   <Search className="w-8 h-8 text-muted-foreground" />

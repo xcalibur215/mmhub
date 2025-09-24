@@ -1,55 +1,104 @@
+import { useState, useEffect } from "react";
 import HeroSection from "@/components/Home/HeroSection";
 import PropertyCard from "@/components/Property/PropertyCard";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Shield, Users, Clock, Star } from "lucide-react";
 import { Link } from "react-router-dom";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
 
-// Mock data for featured properties
-const featuredProperties = [
-  {
-    id: "1",
-    title: "Modern Downtown Apartment with City Views",
-    monthlyRent: 2400,
-    securityDeposit: 2400,
-    bedrooms: 2,
-    bathrooms: 2,
-    squareFeet: 1200,
-    location: "Downtown Seattle, WA",
-    propertyType: "Apartment",
-    listedAt: new Date().toISOString(),
-  },
-  {
-    id: "2", 
-    title: "Cozy Studio in Trendy Neighborhood",
-    monthlyRent: 1800,
-    securityDeposit: 1800,
-    bedrooms: 1,
-    bathrooms: 1,
-    squareFeet: 650,
-    location: "Capitol Hill, Seattle, WA",
-    propertyType: "Studio",
-    listedAt: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-  },
-  {
-    id: "3",
-    title: "Spacious Family Home with Garden",
-    monthlyRent: 3200,
-    securityDeposit: 3200,
-    bedrooms: 4,
-    bathrooms: 3,
-    squareFeet: 2200,
-    location: "Bellevue, WA",
-    propertyType: "House",
-    listedAt: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
-  },
-];
+interface Property {
+  id: string;
+  title: string;
+  monthly_rent: number;
+  security_deposit?: number;
+  bedrooms: number;
+  bathrooms: number;
+  square_feet?: number;
+  location: string;
+  property_type: string;
+  created_at: string;
+  image_url?: string;
+}
 
 const Index = () => {
-  console.log('Index component rendering...');
+  const [featuredProperties, setFeaturedProperties] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const fetchFeaturedProperties = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('properties')
+          .select('*')
+          .eq('featured', true)
+          .order('created_at', { ascending: false })
+          .limit(3);
+        
+        if (error) {
+          console.error('Error fetching featured properties:', error);
+          return;
+        }
+        
+        setFeaturedProperties(data || []);
+        
+        // Fetch user favorites if logged in
+        if (user) {
+          const { data: favorites } = await supabase
+            .from('user_favorites')
+            .select('property_id')
+            .eq('user_id', user.id);
+          
+          if (favorites) {
+            setFavoriteIds(new Set(favorites.map(f => f.property_id)));
+          }
+        }
+      } catch (error) {
+        console.error('Error:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFeaturedProperties();
+  }, [user]);
   
-  const handleToggleFavorite = (id: string) => {
-    // TODO: Implement favorite toggle functionality
-    console.log('Toggle favorite for property:', id);
+  const handleToggleFavorite = async (id: string) => {
+    if (!user) return;
+
+    const isFavorited = favoriteIds.has(id);
+
+    try {
+      if (isFavorited) {
+        const { error } = await supabase
+          .from('user_favorites')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('property_id', id);
+        
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('user_favorites')
+          .insert([{ user_id: user.id, property_id: id }]);
+        
+        if (error) throw error;
+      }
+
+      setFavoriteIds(prev => {
+        const newFavorites = new Set(prev);
+        if (isFavorited) {
+          newFavorites.delete(id);
+        } else {
+          newFavorites.add(id);
+        }
+        return newFavorites;
+      });
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+    }
   };
 
   return (
@@ -128,13 +177,38 @@ const Index = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {featuredProperties.map((property) => (
-              <PropertyCard
-                key={property.id}
-                {...property}
-                onToggleFavorite={handleToggleFavorite}
-              />
-            ))}
+            {loading ? (
+              Array.from({ length: 3 }).map((_, index) => (
+                <div key={index} className="animate-pulse">
+                  <div className="bg-muted rounded-lg h-64 mb-4"></div>
+                  <div className="bg-muted rounded h-4 mb-2"></div>
+                  <div className="bg-muted rounded h-4 w-2/3"></div>
+                </div>
+              ))
+            ) : featuredProperties.length > 0 ? (
+              featuredProperties.map((property) => (
+                <PropertyCard
+                  key={property.id}
+                  id={property.id}
+                  title={property.title}
+                  monthlyRent={property.monthly_rent}
+                  securityDeposit={property.security_deposit}
+                  bedrooms={property.bedrooms}
+                  bathrooms={property.bathrooms}
+                  squareFeet={property.square_feet}
+                  location={property.location}
+                  propertyType={property.property_type}
+                  listedAt={property.created_at}
+                  imageUrl={property.image_url}
+                  isFavorited={favoriteIds.has(property.id)}
+                  onToggleFavorite={handleToggleFavorite}
+                />
+              ))
+            ) : (
+              <div className="col-span-full text-center py-12">
+                <p className="text-muted-foreground">No featured properties available at the moment.</p>
+              </div>
+            )}
           </div>
 
           <div className="text-center mt-12 md:hidden">
