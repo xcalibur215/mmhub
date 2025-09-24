@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useSearchParams } from "react-router-dom";
+import { supabase } from "@/lib/supabase";
 import PropertyCard, { PropertyCardProps } from "@/components/Property/PropertyCard";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -8,8 +9,6 @@ import AdvancedPriceSlider from "@/components/ui/advanced-price-slider";
 import LocationAutocomplete from "@/components/ui/location-autocomplete";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Search, Filter, SlidersHorizontal } from "lucide-react";
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8081/api/v1';
 
 const Listings = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -31,11 +30,14 @@ const Listings = () => {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`${API_BASE}/properties`);
-        if (!res.ok) throw new Error(`Failed to load properties (${res.status})`);
-        const json = await res.json();
-        setProperties(json);
-        setFilteredProperties(json);
+        const { data, error } = await supabase
+          .from('properties')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        setProperties(data || []);
+        setFilteredProperties(data || []);
       } catch (e: unknown) {
         setError(e instanceof Error ? e.message : 'Unknown error');
       } finally {
@@ -49,24 +51,30 @@ const Listings = () => {
     setFilters((prev) => ({ ...prev, [key]: value }));
   };
 
-  const { accessToken } = useAuth();
+  const { user } = useAuth();
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
 
   const handleToggleFavorite = async (id: string) => {
-    if (!accessToken) return;
+    if (!user) return;
 
     const isFavorited = favoriteIds.has(id);
-    const method = isFavorited ? 'DELETE' : 'POST';
 
     try {
-      const res = await fetch(`${API_BASE}/users/me/favorites/${id}`,
-        {
-          method,
-          headers: { Authorization: `Bearer ${accessToken}` },
-        }
-      );
-
-      if (!res.ok) throw new Error(`Failed to toggle favorite`);
+      if (isFavorited) {
+        const { error } = await supabase
+          .from('user_favorites')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('property_id', id);
+        
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('user_favorites')
+          .insert([{ user_id: user.id, property_id: id }]);
+        
+        if (error) throw error;
+      }
 
       setFavoriteIds(prev => {
         const newFavorites = new Set(prev);
