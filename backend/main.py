@@ -34,4 +34,5 @@ async def health_check():
     }
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8081, reload=True)
+    # Keep in sync with Vite proxy target in vite.config.ts
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

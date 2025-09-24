@@ -89,7 +89,6 @@ const Listings = () => {
   const handleFilterChange = (key: string, value: string | number[]) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
   };
-  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
 
   const handleToggleFavorite = async (id: string) => {
     if (!user) return;

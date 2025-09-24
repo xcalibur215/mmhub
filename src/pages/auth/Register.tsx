@@ -50,6 +50,9 @@ const Register = () => {
     }
 
     try {
+      if (!supabase) {
+        throw new Error('Supabase is not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
+      }
       const username = formData.email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '').slice(0, 20) || 'user';
 
       const { error } = await supabase.auth.signUp({

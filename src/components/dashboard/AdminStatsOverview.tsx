@@ -28,7 +28,7 @@ const AdminStatsOverview = () => {
     title: string;
     value: string | number;
     description: string;
-    icon: React.ComponentType<any>;
+    icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
     trend?: number;
     color?: string;
   }) => (

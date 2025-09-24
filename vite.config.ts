@@ -1,5 +1,5 @@
 import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react-swc";
+import react from "@vitejs/plugin-react";
 import path from "path";
 
 // https://vitejs.dev/config/
@@ -10,7 +10,7 @@ export default defineConfig({
     strictPort: false,
     proxy: {
       "/api": {
-        target: "http://localhost:8081",
+        target: "http://localhost:8000",
         changeOrigin: true,
       },
     },
@@ -20,18 +20,6 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
-  },
-  build: {
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          vendor: ["react", "react-dom", "react-router-dom"],
-          ui: ["@radix-ui/react-dialog", "@radix-ui/react-dropdown-menu", "@radix-ui/react-select"],
-          utils: ["clsx", "tailwind-merge", "date-fns"],
-        },
-      },
-    },
-    chunkSizeWarningLimit: 1000,
   },
   esbuild: {
     target: "es2020",

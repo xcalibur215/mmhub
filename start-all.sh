@@ -4,8 +4,8 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKEND_DIR="$ROOT_DIR/backend"
 
-BACKEND_PORT=8081
-FRONTEND_PORT=3000
+BACKEND_PORT=8000
+FRONTEND_PORT=8080
 FRONTEND_MODE="dev"   # dev | prod
 DETACH=0
 
@@ -74,7 +74,7 @@ echo "[start] Frontend (${FRONTEND_MODE})"
   else
     echo "[frontend] Building production bundle..."
     if command -v bun >/dev/null 2>&1; then
-      bun run build || { echo "[frontend][error] build failed"; exit 1; }
+      bun run build:timeout || { echo "[frontend][error] build failed"; exit 1; }
     else
       npm run build || { echo "[frontend][error] build failed"; exit 1; }
     fi

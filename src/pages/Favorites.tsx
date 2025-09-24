@@ -43,10 +43,25 @@ const Favorites = () => {
 
         if (error) throw error;
 
+        interface PropertyFromSupabase {
+          id: string;
+          title: string;
+          monthly_rent: number;
+          security_deposit?: number;
+          bedrooms: number;
+          bathrooms: number;
+          square_feet?: number;
+          location: string;
+          property_type: string;
+          created_at: string;
+          image_url?: string;
+          image_urls?: string[];
+        }
+
         const transformedFavorites: PropertyCardProps[] = data
           ?.filter(item => item.properties)
           .map(item => {
-            const property = item.properties as any;
+            const property = item.properties as PropertyFromSupabase;
             return {
               id: property.id,
               title: property.title,

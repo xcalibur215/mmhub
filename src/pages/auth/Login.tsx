@@ -25,7 +25,7 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      const { ok, error } = await login(formData.email, formData.password);
+  const { ok, error } = await login(formData.email, formData.password);
       if (ok) {
         toast({ title: "Welcome back!", description: "Signed in successfully." });
         navigate('/dashboard');
