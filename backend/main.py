@@ -108,7 +108,7 @@ app.include_router(admin_router, prefix=settings.API_V1_STR + "/admin", tags=["a
 app.include_router(moderation_router, prefix=settings.API_V1_STR, tags=["moderation"])
 
 
-# Ensure tables exist in development (safe for SQLite)
+# Ensure tables exist in development (works with PostgreSQL/Supabase)
 try:
     from db.base import Base, engine  # type: ignore
 

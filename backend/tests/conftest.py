@@ -11,13 +11,13 @@ from db.base import Base
 from db.session import get_db
 from main import app
 
-# Create test database
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
+# Create test database - Use PostgreSQL for testing (or SQLite for local testing)
+SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"  # Keep SQLite for local testing
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
-    connect_args={"check_same_thread": False},
-    poolclass=StaticPool,
+    connect_args={"check_same_thread": False} if SQLALCHEMY_DATABASE_URL.startswith("sqlite") else {},
+    poolclass=StaticPool if SQLALCHEMY_DATABASE_URL.startswith("sqlite") else None,
 )
 
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
