@@ -1,456 +1,483 @@
-import { useParams, Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
+import { Button } from '../components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
+import { Badge } from '../components/ui/badge';
 import { 
+  ArrowLeft, 
   Heart, 
+  Share, 
   MapPin, 
   Bed, 
   Bath, 
-  Square, 
-  Calendar,
-  Phone,
-  Mail,
-  User,
-  Shield,
+  Maximize,
+  Phone, 
+  Mail, 
+  Star, 
   CheckCircle,
-  ArrowLeft
-} from "lucide-react";
-import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabase";
-import { useAuth } from "@/context/AuthContext";
-import { useToast } from "@/hooks/use-toast";
+  Calendar,
+  Building,
+  Copy,
+  ExternalLink,
+  MessageCircle,
+  Send,
+  MessageSquare,
+  Lock,
+  Wifi, 
+  Car, 
+  Waves, 
+  Dumbbell, 
+  ChefHat, 
+  Snowflake, 
+  WashingMachine,
+  Loader2
+} from 'lucide-react';
 
-interface PropertyDetailType {
+interface Property {
   id: string;
   title: string;
-  description?: string;
-  monthly_rent: number;
-  security_deposit?: number;
+  description: string;
+  price: number;
+  location: string;
+  property_type: string;
   bedrooms: number;
   bathrooms: number;
-  square_feet?: number;
-  location: string;
-  full_address?: string;
-  property_type: string;
+  area_sqm: number;
+  amenities: string[];
+  images: string[];
+  is_available: boolean;
   created_at: string;
-  available_date?: string;
-  image_urls?: string[];
-  amenities?: string[];
-  contact_profile?: {
-    name: string;
-    role_tag: string;
-    phone: string;
-    email: string;
-    profile_picture?: string;
-    rating?: number;
-    review_count?: number;
-    response_time?: string;
-  };
 }
-
 
 const PropertyDetail = () => {
   const { id } = useParams();
   const { user } = useAuth();
-  const { toast } = useToast();
-  const [property, setProperty] = useState<PropertyDetailType | null>(null);
+  const navigate = useNavigate();
+  const [property, setProperty] = useState<Property | null>(null);
   const [loading, setLoading] = useState(true);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [isFavorited, setIsFavorited] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchProperty = async () => {
-      if (!id) return;
-      
+      if (!id) {
+        setError('Property ID not found');
+        setLoading(false);
+        return;
+      }
+
       try {
-        const { data, error } = await supabase
+        const { data, error: fetchError } = await supabase
           .from('properties')
           .select('*')
           .eq('id', id)
           .single();
+
+        if (fetchError) throw fetchError;
         
-        if (error) {
-          console.error('Error fetching property:', error);
-          toast({
-            title: "Property not found",
-            description: "The property you're looking for doesn't exist.",
-            variant: "destructive"
-          });
-          return;
+        if (!data) {
+          setError('Property not found');
+        } else {
+          setProperty(data);
         }
-        
-        setProperty(data);
-        
-        // Check if favorited by current user
-        if (user) {
-          const { data: favorite } = await supabase
-            .from('user_favorites')
-            .select('id')
-            .eq('user_id', user.id)
-            .eq('property_id', id)
-            .single();
-          
-          setIsFavorited(!!favorite);
-        }
-        
-      } catch (error) {
-        console.error('Error:', error);
-        toast({
-          title: "Error loading property",
-          description: "There was a problem loading the property details.",
-          variant: "destructive"
-        });
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Failed to load property');
       } finally {
         setLoading(false);
       }
     };
 
     fetchProperty();
-  }, [id, user, toast]);
-
-  const handleToggleFavorite = async () => {
-    if (!user || !property) {
-      toast({
-        title: "Sign in required",
-        description: "Please sign in to save properties to your favorites.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    try {
-      if (isFavorited) {
-        const { error } = await supabase
-          .from('user_favorites')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('property_id', property.id);
-        
-        if (error) throw error;
-        
-        toast({
-          title: "Removed from favorites",
-          description: property.title
-        });
-      } else {
-        const { error } = await supabase
-          .from('user_favorites')
-          .insert([{ user_id: user.id, property_id: property.id }]);
-        
-        if (error) throw error;
-        
-        toast({
-          title: "Added to favorites",
-          description: property.title
-        });
-      }
-
-      setIsFavorited(!isFavorited);
-    } catch (error) {
-      console.error('Error toggling favorite:', error);
-      toast({
-        title: "Error",
-        description: "There was a problem updating your favorites.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
+  }, [id]);
 
   if (loading) {
     return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 animate-spin" />
+          <p className="text-muted-foreground">Loading property details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !property) {
+    return (
       <div className="min-h-screen bg-background">
-        <div className="container mx-auto px-4 py-8">
-          <div className="animate-pulse space-y-4">
-            <div className="bg-muted rounded-lg h-64"></div>
-            <div className="bg-muted rounded h-8"></div>
-            <div className="bg-muted rounded h-4 w-2/3"></div>
+        <div className="container mx-auto px-4 py-6">
+          <Button 
+            variant="outline" 
+            onClick={() => navigate('/listings')}
+            className="flex items-center gap-2 mb-6"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Listings
+          </Button>
+          
+          <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
+            <h1 className="text-2xl font-bold mb-2">Property Not Found</h1>
+            <p className="text-muted-foreground mb-6">
+              {error || 'The property you\'re looking for doesn\'t exist or has been removed.'}
+            </p>
+            <Button onClick={() => navigate('/listings')}>
+              Browse All Properties
+            </Button>
           </div>
         </div>
       </div>
     );
   }
 
-  if (!property) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-foreground mb-4">Property Not Found</h1>
-          <p className="text-muted-foreground mb-4">The property you're looking for doesn't exist.</p>
-          <Button asChild>
-            <Link to="/listings">Browse Properties</Link>
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  // Transform property data for display
+  const displayProperty = {
+    id: property.id,
+    title: property.title,
+    description: property.description,
+    monthly_rent: property.price,
+    security_deposit: property.price * 2, // Typically 2 months security deposit
+    bedrooms: property.bedrooms,
+    bathrooms: property.bathrooms,
+    square_feet: Math.round(property.area_sqm * 10.764), // Convert sqm to sqft
+    location: property.location.split(',').slice(0, 2).join(', '), // Short location
+    full_address: property.location,
+    property_type: property.property_type.charAt(0).toUpperCase() + property.property_type.slice(1),
+    available_date: property.created_at,
+    image_urls: property.images && property.images.length > 0 ? property.images : ['/placeholder.svg'],
+    amenities: Array.isArray(property.amenities) ? property.amenities.map(a => a.toLowerCase().replace(/\s+/g, '_')) : [],
+    contact_profile: {
+      name: 'Property Manager',
+      role_tag: 'Verified Manager',
+      phone: '+66 2 123 4567',
+      email: 'manager@example.com',
+      whatsapp: '+66 87 123 4567',
+      telegram: '@propertymanager',
+      line: 'property.manager',
+      profile_picture: '/placeholder.svg',
+      rating: 4.8,
+      review_count: 127,
+      response_time: '< 1 hour',
+      verified: true,
+      properties_count: 24
+    }
+  };
 
-  const images = property.image_urls && property.image_urls.length > 0 
-    ? property.image_urls 
-    : ["https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&h=600&fit=crop"];
+  const getAmenityIcon = (amenity: string) => {
+    switch (amenity) {
+      case 'wifi': return <Wifi className="w-4 h-4" />;
+      case 'parking': return <Car className="w-4 h-4" />;
+      case 'pool': return <Waves className="w-4 h-4" />;
+      case 'gym': return <Dumbbell className="w-4 h-4" />;
+      case 'kitchen': return <ChefHat className="w-4 h-4" />;
+      case 'air_conditioning': return <Snowflake className="w-4 h-4" />;
+      case 'washing_machine': return <WashingMachine className="w-4 h-4" />;
+      default: return null;
+    }
+  };
+
+  const handleContactCopy = (text: string, type: string) => {
+    navigator.clipboard.writeText(text);
+  };
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Back Button */}
-      <div className="container mx-auto px-4 py-4">
-        <Button variant="ghost" asChild className="mb-4">
-          <Link to="/listings">
-            <ArrowLeft className="w-4 h-4 mr-2" />
+      <div className="container mx-auto px-4 py-6">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <Button 
+            variant="outline" 
+            onClick={() => navigate('/listings')}
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
             Back to Listings
-          </Link>
-        </Button>
-      </div>
+          </Button>
+          
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="icon">
+              <Heart className="w-4 h-4" />
+            </Button>
+            <Button variant="outline" size="icon">
+              <Share className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
 
-      <div className="container mx-auto px-4 pb-12">
+        {/* Image */}
+        <div className="relative mb-8">
+          <div className="aspect-video rounded-xl overflow-hidden bg-muted">
+            <img
+              src={displayProperty.image_urls?.[0] || '/placeholder.svg'}
+              alt={displayProperty.title}
+              className="w-full h-full object-cover"
+            />
+          </div>
+        </div>
+
+        {/* Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
-            {/* Image Gallery */}
-            <div className="space-y-4">
-              <div className="aspect-video rounded-xl overflow-hidden bg-muted">
-                <img
-                  src={images[currentImageIndex]}
-                  alt={`${property.title} - Image ${currentImageIndex + 1}`}
-                  className="w-full h-full object-cover"
-                />
+            {/* Property Header */}
+            <div>
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <h1 className="text-3xl font-bold mb-2">{displayProperty.title}</h1>
+                  <div className="flex items-center gap-2 text-muted-foreground mb-3">
+                    <MapPin className="w-4 h-4" />
+                    <span>{displayProperty.location}</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{displayProperty.full_address}</p>
+                </div>
+                <div className="text-right">
+                  <div className="text-3xl font-bold text-primary">
+                    ฿{displayProperty.monthly_rent.toLocaleString()}
+                  </div>
+                  <div className="text-sm text-muted-foreground">per month</div>
+                  <div className="text-sm text-muted-foreground mt-1">
+                    ฿{displayProperty.security_deposit.toLocaleString()} deposit
+                  </div>
+                </div>
               </div>
-              <div className="grid grid-cols-4 gap-2">
-                {images.map((image, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentImageIndex(index)}
-                    className={`aspect-video rounded-lg overflow-hidden border-2 transition-colors ${
-                      currentImageIndex === index
-                        ? "border-primary"
-                        : "border-transparent hover:border-border"
-                    }`}
-                  >
-                    <img
-                      src={image}
-                      alt={`Thumbnail ${index + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                  </button>
-                ))}
+
+              {/* Property Stats */}
+              <div className="flex items-center gap-6 p-4 bg-muted/50 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <Bed className="w-5 h-5 text-muted-foreground" />
+                  <span className="font-medium">{displayProperty.bedrooms} bed</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Bath className="w-5 h-5 text-muted-foreground" />
+                  <span className="font-medium">{displayProperty.bathrooms} bath</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Maximize className="w-5 h-5 text-muted-foreground" />
+                  <span className="font-medium">{displayProperty.square_feet} ft²</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Building className="w-5 h-5 text-muted-foreground" />
+                  <span className="font-medium">{displayProperty.property_type}</span>
+                </div>
               </div>
             </div>
 
-            {/* Property Details */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <Badge variant="secondary" className="mb-2">
-                      {property.property_type}
-                    </Badge>
-                    <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
-                      {property.title}
-                    </h1>
-                    <div className="flex items-center text-muted-foreground mb-4">
-                      <MapPin className="w-4 h-4 mr-2" />
-                      {property.full_address || property.location}
-                    </div>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleToggleFavorite}
-                    className={isFavorited ? "text-red-500" : "text-muted-foreground"}
-                  >
-                    <Heart className={`h-5 w-5 ${isFavorited ? "fill-current" : ""}`} />
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Price and Key Details */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-gradient-subtle rounded-lg">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-primary">
-                      ฿{property.monthly_rent.toLocaleString()}
-                    </div>
-                    <div className="text-sm text-muted-foreground">Monthly Rent</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-xl font-semibold text-foreground">
-                      {property.bedrooms}
-                    </div>
-                    <div className="text-sm text-muted-foreground flex items-center justify-center">
-                      <Bed className="w-3 h-3 mr-1" />
-                      Bedrooms
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-xl font-semibold text-foreground">
-                      {property.bathrooms}
-                    </div>
-                    <div className="text-sm text-muted-foreground flex items-center justify-center">
-                      <Bath className="w-3 h-3 mr-1" />
-                      Bathrooms
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-xl font-semibold text-foreground">
-                      {property.square_feet?.toLocaleString() || 'N/A'}
-                    </div>
-                    <div className="text-sm text-muted-foreground flex items-center justify-center">
-                      <Square className="w-3 h-3 mr-1" />
-                      Sq Ft
-                    </div>
-                  </div>
-                </div>
+            {/* Description */}
+            <div>
+              <h2 className="text-2xl font-semibold mb-4">About this property</h2>
+              <p className="text-muted-foreground leading-relaxed">{displayProperty.description}</p>
+            </div>
 
-                <Separator />
-
-                {/* Description */}
-                {/* Description */}
-                {property.description && (
-                  <>
-                    <div>
-                      <h3 className="text-lg font-semibold text-foreground mb-3">Description</h3>
-                      <p className="text-muted-foreground leading-relaxed">
-                        {property.description}
-                      </p>
-                    </div>
-                    <Separator />
-                  </>
+            {/* Amenities */}
+            <div>
+              <h2 className="text-2xl font-semibold mb-4">Amenities</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                {Array.isArray(displayProperty.amenities) && displayProperty.amenities.length > 0 ? (
+                  displayProperty.amenities.map((amenity, index) => {
+                    const icon = getAmenityIcon(amenity);
+                    if (!icon) return null;
+                    
+                    return (
+                      <div key={index} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                        {icon}
+                        <span className="text-sm font-medium capitalize">
+                          {amenity.replace('_', ' ')}
+                        </span>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="col-span-full text-center py-8 text-muted-foreground">
+                    No amenities listed for this property
+                  </div>
                 )}
+              </div>
+            </div>
 
-                {/* Amenities */}
-                {property.amenities && property.amenities.length > 0 && (
-                  <>
-                    <div>
-                      <h3 className="text-lg font-semibold text-foreground mb-4">Amenities</h3>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                        {property.amenities.map((amenity, index) => (
-                          <div key={index} className="flex items-center text-sm">
-                            <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
-                            <span>{amenity}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <Separator />
-                  </>
-                )}
-
-                <Separator />
-
-                {/* Lease Details */}
-                <div>
-                  <h3 className="text-lg font-semibold text-foreground mb-4">Lease Details</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    {property.security_deposit && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Security Deposit:</span>
-                        <span className="font-medium">฿{property.security_deposit.toLocaleString()}</span>
-                      </div>
-                    )}
-                    {property.available_date && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Available Date:</span>
-                        <span className="font-medium">{formatDate(property.available_date)}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Listed Date:</span>
-                      <span className="font-medium">{formatDate(property.created_at)}</span>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            {/* Available Date */}
+            <div>
+              <h2 className="text-2xl font-semibold mb-4">Availability</h2>
+              <div className="flex items-center gap-2 p-4 bg-muted/50 rounded-lg">
+                <Calendar className="w-5 h-5 text-muted-foreground" />
+                <span>Available from {new Date(displayProperty.available_date).toLocaleDateString()}</span>
+              </div>
+            </div>
           </div>
 
           {/* Contact Sidebar */}
           <div className="lg:col-span-1">
-            <div className="sticky top-8">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Contact Property Manager</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* Manager Profile */}
-                  {property.contact_profile ? (
-                    <>
-                      <div className="flex items-start space-x-4">
-                        <img
-                          src={property.contact_profile.profile_picture || "/placeholder.svg"}
-                          alt={property.contact_profile.name}
-                          className="w-12 h-12 rounded-full object-cover"
-                        />
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-foreground">
-                            {property.contact_profile.name}
-                          </h4>
-                          <Badge variant="outline" className="text-xs mb-2">
-                            {property.contact_profile.role_tag}
-                          </Badge>
-                          {property.contact_profile.rating && (
-                            <div className="flex items-center text-sm text-muted-foreground mb-1">
-                              <Shield className="w-4 h-4 mr-1" />
-                              {property.contact_profile.rating} stars ({property.contact_profile.review_count} reviews)
-                            </div>
-                          )}
-                          {property.contact_profile.response_time && (
-                            <p className="text-xs text-muted-foreground">
-                              {property.contact_profile.response_time}
-                            </p>
-                          )}
-                        </div>
+            <Card className="sticky top-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Phone className="w-5 h-5" />
+                  Contact Property Manager
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Profile Header */}
+                <div className="flex items-center gap-4">
+                  <Avatar className="w-16 h-16">
+                    <AvatarImage 
+                      src={displayProperty.contact_profile?.profile_picture} 
+                      alt={displayProperty.contact_profile?.name} 
+                    />
+                    <AvatarFallback>
+                      {displayProperty.contact_profile?.name?.charAt(0) || 'P'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold">{displayProperty.contact_profile?.name}</h3>
+                      {displayProperty.contact_profile?.verified && (
+                        <Badge variant="secondary" className="text-xs">
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          Verified
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {displayProperty.contact_profile?.role_tag}
+                    </p>
+                    <div className="flex items-center gap-1 mt-1">
+                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                      <span className="text-sm font-medium">
+                        {displayProperty.contact_profile.rating}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        ({displayProperty.contact_profile.review_count} reviews)
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Stats */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center p-3 bg-muted/50 rounded-lg">
+                    <div className="text-lg font-semibold">
+                      {displayProperty.contact_profile?.properties_count || 0}
+                    </div>
+                    <div className="text-xs text-muted-foreground">Properties</div>
+                  </div>
+                  <div className="text-center p-3 bg-muted/50 rounded-lg">
+                    <div className="text-lg font-semibold">
+                      {displayProperty.contact_profile?.response_time || '< 24h'}
+                    </div>
+                    <div className="text-xs text-muted-foreground">Response time</div>
+                  </div>
+                </div>
+
+                {/* Contact Information - Conditional */}
+                {user ? (
+                  <div className="space-y-3">
+                    <div className="text-sm font-medium text-muted-foreground mb-3">
+                      Contact Methods:
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <Phone className="w-4 h-4" />
+                        <span className="text-sm">{displayProperty.contact_profile.phone}</span>
                       </div>
-
-                      <Separator />
-
-                      {/* Contact Actions */}
-                      <div className="space-y-3">
-                        <Button variant="hero" className="w-full" size="lg">
-                          <Phone className="w-4 h-4 mr-2" />
-                          Call Now
-                        </Button>
-                        <Button variant="premium" className="w-full">
-                          <Mail className="w-4 h-4 mr-2" />
-                          Send Message
-                        </Button>
-                        <Button variant="outline" className="w-full">
-                          Schedule Tour
-                        </Button>
-                      </div>
-
-                      <Separator />
-
-                      {/* Quick Contact Info */}
-                      <div className="space-y-2 text-sm">
-                        <div className="flex items-center">
-                          <Phone className="w-4 h-4 mr-2 text-muted-foreground" />
-                          <span>{property.contact_profile.phone}</span>
-                        </div>
-                        <div className="flex items-center">
-                          <Mail className="w-4 h-4 mr-2 text-muted-foreground" />
-                          <span className="truncate">{property.contact_profile.email}</span>
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="text-center py-8">
-                      <p className="text-muted-foreground mb-4">Contact information not available</p>
-                      <Button variant="outline" className="w-full">
-                        <Mail className="w-4 h-4 mr-2" />
-                        Request Contact Info
+                      <Button 
+                        size="sm" 
+                        variant="ghost"
+                        onClick={() => handleContactCopy(displayProperty.contact_profile.phone, 'Phone')}
+                      >
+                        <Copy className="w-3 h-3" />
                       </Button>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
+
+                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <Mail className="w-4 h-4" />
+                        <span className="text-sm">{displayProperty.contact_profile.email}</span>
+                      </div>
+                      <Button 
+                        size="sm" 
+                        variant="ghost"
+                        onClick={() => handleContactCopy(displayProperty.contact_profile.email, 'Email')}
+                      >
+                        <Copy className="w-3 h-3" />
+                      </Button>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <MessageCircle className="w-4 h-4" />
+                        <span className="text-sm">WhatsApp</span>
+                      </div>
+                      <Button 
+                        size="sm" 
+                        variant="ghost"
+                        onClick={() => window.open(`https://wa.me/${displayProperty.contact_profile.whatsapp.replace(/[^0-9]/g, '')}`, '_blank')}
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                      </Button>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <Send className="w-4 h-4" />
+                        <span className="text-sm">Telegram</span>
+                      </div>
+                      <Button 
+                        size="sm" 
+                        variant="ghost"
+                        onClick={() => window.open(`https://t.me/${displayProperty.contact_profile.telegram.replace('@', '')}`, '_blank')}
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                      </Button>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <MessageSquare className="w-4 h-4" />
+                        <span className="text-sm">LINE ID: {displayProperty.contact_profile.line}</span>
+                      </div>
+                      <Button 
+                        size="sm" 
+                        variant="ghost"
+                        onClick={() => handleContactCopy(displayProperty.contact_profile.line, 'LINE ID')}
+                      >
+                        <Copy className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="p-4 bg-muted/50 rounded-lg text-center">
+                      <Lock className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                      <h4 className="font-medium mb-2">Login to View Contact Details</h4>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Create a free account to access property manager's phone, email, and messaging contact information.
+                      </p>
+                      <div className="space-y-2">
+                        <Button 
+                          className="w-full" 
+                          onClick={() => navigate('/auth/login')}
+                        >
+                          Login
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          className="w-full" 
+                          onClick={() => navigate('/auth/signup')}
+                        >
+                          Sign Up
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground">
+                        Managed by <span className="font-medium">{displayProperty.contact_profile?.name}</span>
+                        {displayProperty.contact_profile?.verified && ' • Verified Manager'}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>

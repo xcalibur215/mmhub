@@ -1,13 +1,64 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Home, Menu, X, User, Heart, MessageCircle, LogOut } from "lucide-react";
+import { Home, Menu, X, User, Heart, MessageCircle, LogOut, RefreshCw } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { emergencyLogout } from "@/utils/emergency-logout";
 
 const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { user, profile, isAdmin, logout } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { user, profile, isAdmin, logout, refreshProfile } = useAuth();
+  
+  const handleRefreshProfile = async () => {
+    try {
+      await refreshProfile();
+      toast({
+        title: "Profile refreshed",
+        description: "Your profile data has been updated.",
+      });
+    } catch (error) {
+      console.error('Profile refresh failed:', error);
+      toast({
+        title: "Refresh failed",
+        description: "There was an error refreshing your profile. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const handleLogout = async () => {
+    try {
+      console.log('Header: Starting logout...');
+      await logout();
+      console.log('Header: Logout successful, navigating...');
+      toast({
+        title: "Logged out successfully",
+        description: "You have been signed out of your account.",
+      });
+      navigate('/', { replace: true });
+    } catch (error) {
+      console.error('Header: Logout failed:', error);
+      toast({
+        title: "Logout failed",
+        description: "There was an error signing you out. Please try again.",
+        variant: "destructive"
+      });
+      
+      // Force logout by clearing everything and refreshing
+      localStorage.clear();
+      sessionStorage.clear();
+      window.location.href = '/';
+    }
+  };
+
+  const handleForceLogout = () => {
+    console.log('Header: Force logout initiated');
+    emergencyLogout();
+  };
   const location = useLocation();
 
   const navItems = [
@@ -69,6 +120,11 @@ const Header = () => {
                     <Button variant="outline" size="sm" className="flex items-center space-x-2">
                       <User className="w-4 h-4" />
                       <span>{profile?.username || user?.email?.split('@')[0] || 'User'}</span>
+                      {isAdmin && (
+                        <span className="ml-1 px-2 py-0.5 text-xs bg-red-500 text-white rounded-full">
+                          Admin
+                        </span>
+                      )}
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
@@ -78,8 +134,14 @@ const Header = () => {
                     <DropdownMenuItem asChild>
                       <Link to="/settings">Settings</Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={logout} className="text-red-600">
+                    <DropdownMenuItem onClick={handleRefreshProfile}>
+                      <RefreshCw className="w-4 h-4 mr-2" /> Refresh Profile
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleLogout} className="text-red-600">
                       <LogOut className="w-4 h-4 mr-2" /> Logout
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleForceLogout} className="text-red-800">
+                      <LogOut className="w-4 h-4 mr-2" /> Force Logout
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -151,8 +213,30 @@ const Header = () => {
                         {isAdmin ? 'Admin Panel' : 'Dashboard'}
                       </Link>
                     </Button>
-                    <Button variant="destructive" size="sm" className="justify-start" onClick={() => { logout(); setIsMobileMenuOpen(false); }}>
+                    <Button variant="ghost" size="sm" className="justify-start" asChild>
+                      <Link to="/settings" onClick={() => setIsMobileMenuOpen(false)}>
+                        Settings
+                      </Link>
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="justify-start" 
+                      onClick={() => { 
+                        handleRefreshProfile(); 
+                        setIsMobileMenuOpen(false); 
+                      }}
+                    >
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Refresh Profile
+                    </Button>
+                    <Button variant="destructive" size="sm" className="justify-start" onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }}>
+                      <LogOut className="w-4 h-4 mr-2" />
                       Logout
+                    </Button>
+                    <Button variant="destructive" size="sm" className="justify-start" onClick={() => { handleForceLogout(); setIsMobileMenuOpen(false); }}>
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Force Logout
                     </Button>
                   </>
                 )}

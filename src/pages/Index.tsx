@@ -106,13 +106,18 @@ const dummyProperties: Property[] = [
 const Index = () => {
   const [featuredProperties, setFeaturedProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const fetchFeaturedProperties = async () => {
       try {
+        console.log('Fetching featured properties...');
+        setError(null);
+        
         if (!supabase) {
+          console.log('Supabase not configured, using dummy data');
           // If Supabase is not configured, use dummy data
           setFeaturedProperties(dummyProperties.slice(0, 3));
           setLoading(false);
@@ -125,15 +130,25 @@ const Index = () => {
           .order('created_at', { ascending: false })
           .limit(3);
         
+        console.log('Supabase response:', { data, error });
+        
         if (error) {
           console.error('Error fetching featured properties:', error);
+          setError('Failed to load properties from database. Using sample data.');
           // Fallback to dummy data on error
           setFeaturedProperties(dummyProperties.slice(0, 3));
           setLoading(false);
           return;
         }
         
-        setFeaturedProperties(data || dummyProperties.slice(0, 3));
+        // Transform data to match expected interface
+        const transformedData = data?.map(property => ({
+          ...property,
+          id: String(property.id), // Ensure id is always a string
+          monthly_rent: property.price // Map price column to monthly_rent
+        })) || [];
+        
+        setFeaturedProperties(transformedData.length > 0 ? transformedData : dummyProperties.slice(0, 3));
         
         // Fetch user favorites if logged in
         if (user) {
@@ -147,7 +162,8 @@ const Index = () => {
           }
         }
       } catch (error) {
-        console.error('Error:', error);
+        console.error('Error in fetchFeaturedProperties:', error);
+        setError('An unexpected error occurred while loading properties.');
         // Fallback to dummy data on error
         setFeaturedProperties(dummyProperties.slice(0, 3));
       } finally {
@@ -269,9 +285,15 @@ const Index = () => {
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-8">
+            {error && (
+              <div className="col-span-full bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative mb-4">
+                <strong className="font-bold">Notice: </strong>
+                <span className="block sm:inline">{error}</span>
+              </div>
+            )}
             {loading ? (
-              Array.from({ length: 3 }).map((_, index) => (
+              Array.from({ length: 4 }).map((_, index) => (
                 <div key={index} className="animate-pulse">
                   <div className="bg-muted rounded-lg h-64 mb-4"></div>
                   <div className="bg-muted rounded h-4 mb-2"></div>

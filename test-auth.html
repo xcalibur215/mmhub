@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auth Test - MMHub</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>MMHub Auth Testing</h1>
+    
+    <div style="margin: 20px 0; padding: 20px; border: 1px solid #ccc;">
+        <h2>Test Registration</h2>
+        <input type="email" id="reg-email" placeholder="Email" value="test@example.com" style="margin: 5px; padding: 8px;">
+        <input type="password" id="reg-password" placeholder="Password" value="password123" style="margin: 5px; padding: 8px;">
+        <input type="text" id="reg-firstname" placeholder="First Name" value="Test" style="margin: 5px; padding: 8px;">
+        <input type="text" id="reg-lastname" placeholder="Last Name" value="User" style="margin: 5px; padding: 8px;">
+        <br>
+        <button onclick="testSignUp()" style="margin: 10px; padding: 10px;">Test Sign Up</button>
+    </div>
+    
+    <div style="margin: 20px 0; padding: 20px; border: 1px solid #ccc;">
+        <h2>Test Login</h2>
+        <input type="email" id="login-email" placeholder="Email" value="test@example.com" style="margin: 5px; padding: 8px;">
+        <input type="password" id="login-password" placeholder="Password" value="password123" style="margin: 5px; padding: 8px;">
+        <br>
+        <button onclick="testSignIn()" style="margin: 10px; padding: 10px;">Test Sign In</button>
+    </div>
+    
+    <div style="margin: 20px 0; padding: 20px; border: 1px solid #ccc;">
+        <h2>Current Status</h2>
+        <button onclick="checkUser()" style="margin: 10px; padding: 10px;">Check Current User</button>
+        <button onclick="signOut()" style="margin: 10px; padding: 10px;">Sign Out</button>
+    </div>
+    
+    <div id="output" style="margin: 20px 0; padding: 20px; border: 1px solid #eee; background: #f9f9f9; white-space: pre-wrap; font-family: monospace;"></div>
+
+    <script>
+        const supabaseUrl = 'https://wkjshlcwstzxvxnvowby.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndranNobGN3c3R6eHZ4bnZvd2J5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3MTE4NjQsImV4cCI6MjA3NDI4Nzg2NH0.n3rLz6DmhD8rhcZQhWkvxkdm2N6qj31zIGYNHWPLzCo';
+        const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+        function log(message, data = '') {
+            const output = document.getElementById('output');
+            const timestamp = new Date().toLocaleTimeString();
+            output.textContent += `[${timestamp}] ${message}\n${data ? JSON.stringify(data, null, 2) + '\n' : ''}`;
+            console.log(message, data);
+        }
+
+        async function testSignUp() {
+            const email = document.getElementById('reg-email').value;
+            const password = document.getElementById('reg-password').value;
+            const firstName = document.getElementById('reg-firstname').value;
+            const lastName = document.getElementById('reg-lastname').value;
+            
+            log('🔄 Testing Sign Up...');
+            
+            try {
+                const { data, error } = await supabase.auth.signUp({
+                    email: email,
+                    password: password,
+                    options: {
+                        data: {
+                            first_name: firstName,
+                            last_name: lastName,
+                            username: email.split('@')[0],
+                            role: 'renter'
+                        }
+                    }
+                });
+                
+                if (error) {
+                    log('❌ Sign up error:', error);
+                } else {
+                    log('✅ Sign up success!');
+                    log('User data:', data.user);
+                    log('Session data:', data.session);
+                    
+                    if (data.session) {
+                        log('🎉 User is immediately signed in!');
+                    } else {
+                        log('📧 Email verification required');
+                    }
+                }
+            } catch (e) {
+                log('💥 Exception:', e);
+            }
+        }
+
+        async function testSignIn() {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            
+            log('🔄 Testing Sign In...');
+            
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+                
+                if (error) {
+                    log('❌ Sign in error:', error);
+                } else {
+                    log('✅ Sign in success!');
+                    log('User data:', data.user);
+                    log('Session data:', data.session);
+                }
+            } catch (e) {
+                log('💥 Exception:', e);
+            }
+        }
+
+        async function checkUser() {
+            log('🔄 Checking current user...');
+            
+            try {
+                const { data: { user }, error } = await supabase.auth.getUser();
+                
+                if (error) {
+                    log('❌ Error getting user:', error);
+                } else if (user) {
+                    log('✅ Current user:', user);
+                    
+                    // Also check profile
+                    const { data: profile, error: profileError } = await supabase
+                        .from('profiles')
+                        .select('*')
+                        .eq('id', user.id)
+                        .single();
+                    
+                    if (profileError) {
+                        log('❌ Profile error:', profileError);
+                    } else {
+                        log('👤 User profile:', profile);
+                    }
+                } else {
+                    log('❌ No user signed in');
+                }
+            } catch (e) {
+                log('💥 Exception:', e);
+            }
+        }
+
+        async function signOut() {
+            log('🔄 Signing out...');
+            
+            try {
+                const { error } = await supabase.auth.signOut();
+                
+                if (error) {
+                    log('❌ Sign out error:', error);
+                } else {
+                    log('✅ Signed out successfully');
+                }
+            } catch (e) {
+                log('💥 Exception:', e);
+            }
+        }
+
+        // Auto-check user on load
+        window.addEventListener('load', checkUser);
+    </script>
+</body>
+</html>

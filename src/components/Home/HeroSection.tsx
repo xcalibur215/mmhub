@@ -1,22 +1,38 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import LocationAutocomplete from "@/components/ui/location-autocomplete";
 import { Search, Bed, DollarSign } from "lucide-react";
 import heroImage from "@/assets/hero-real-estate.jpg";
+import { useLocation } from "@/context/LocationContext";
 
 const HeroSection = () => {
   const navigate = useNavigate();
+  const { currentLocation, getSearchLocation } = useLocation();
   const [searchData, setSearchData] = useState({
     location: "",
     bedrooms: "",
     maxRent: "",
   });
+  const [locationCleared, setLocationCleared] = useState(false);
+
+  // Auto-set location when geolocation is available, but not if user has cleared it
+  useEffect(() => {
+    if (!searchData.location && currentLocation && !locationCleared) {
+      const searchLocation = getSearchLocation();
+      if (searchLocation) {
+        setSearchData(prev => ({ ...prev, location: searchLocation }));
+      }
+    }
+  }, [currentLocation, searchData.location, getSearchLocation, locationCleared]);
 
   const handleSearch = () => {
     const params = new URLSearchParams();
-    if (searchData.location) params.set("location", searchData.location);
+    // Only add location parameter if it's not empty (don't add default text)
+    if (searchData.location && searchData.location !== "Default (all properties)") {
+      params.set("location", searchData.location);
+    }
     if (searchData.bedrooms && searchData.bedrooms !== "any") params.set("bedrooms", searchData.bedrooms);
     if (searchData.maxRent && searchData.maxRent !== "any") params.set("maxRent", searchData.maxRent);
     
@@ -51,16 +67,30 @@ const HeroSection = () => {
 
           {/* Search Form */}
           <div className="bg-background/95 backdrop-blur-sm rounded-2xl p-6 shadow-elegant border border-border/50">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-              <div className="md:col-span-2">
+            {/* Location Status Indicator */}
+            {currentLocation && (
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center gap-2 text-sm text-blue-700">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                  <span>📍 Using your location: <strong>{getSearchLocation()}</strong></span>
+                </div>
+              </div>
+            )}
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <div className="sm:col-span-2 lg:col-span-2">
                 <label className="block text-sm font-medium text-foreground mb-2">
                   Location in Thailand
                 </label>
                 <LocationAutocomplete
                   value={searchData.location}
-                  onChange={(value) => setSearchData(prev => ({ ...prev, location: value }))}
+                  onChange={(value) => {
+                    setSearchData(prev => ({ ...prev, location: value }));
+                    // If user clears the location, remember that they intentionally cleared it
+                    setLocationCleared(!value || value.trim() === '');
+                  }}
                   placeholder="Bangkok, Chiang Mai, Phuket..."
-                  className="h-12"
+                  className="h-11 md:h-12"
                 />
               </div>
               
@@ -70,7 +100,7 @@ const HeroSection = () => {
                   Bedrooms (min)
                 </label>
                 <Select value={searchData.bedrooms} onValueChange={(value) => setSearchData(prev => ({ ...prev, bedrooms: value }))}>
-                  <SelectTrigger className="h-12">
+                  <SelectTrigger className="h-11 md:h-12">
                     <SelectValue placeholder="Any" />
                   </SelectTrigger>
                   <SelectContent>
@@ -88,7 +118,7 @@ const HeroSection = () => {
                   Max Rent
                 </label>
                 <Select value={searchData.maxRent} onValueChange={(value) => setSearchData(prev => ({ ...prev, maxRent: value }))}>
-                  <SelectTrigger className="h-12">
+                  <SelectTrigger className="h-11 md:h-12">
                     <SelectValue placeholder="Any" />
                   </SelectTrigger>
                   <SelectContent>
@@ -109,15 +139,15 @@ const HeroSection = () => {
                 variant="hero" 
                 size="lg" 
                 onClick={handleSearch}
-                className="flex-1 h-12 text-base font-semibold"
+                className="flex-1 h-11 md:h-12 text-sm md:text-base font-semibold"
               >
-                <Search className="w-5 h-5 mr-2" />
+                <Search className="w-4 h-4 md:w-5 md:h-5 mr-2" />
                 Search Properties
               </Button>
               <Button 
                 variant="premium" 
                 size="lg" 
-                className="h-12 font-semibold"
+                className="h-11 md:h-12 text-sm md:text-base font-semibold px-4 md:px-6"
                 onClick={() => navigate('/listings')}
               >
                 Browse All

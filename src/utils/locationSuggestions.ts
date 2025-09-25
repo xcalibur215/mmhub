@@ -6,7 +6,19 @@ export interface LocationSuggestion {
 
 // Thailand location suggestions data
 export const THAILAND_LOCATIONS: LocationSuggestion[] = [
-  // Bangkok Districts
+  // Major Regions/Cities (Priority 1)
+  { name: "Bangkok", type: "city" as const, province: "Bangkok" },
+  { name: "Chiang Mai", type: "city" as const, province: "Chiang Mai" },
+  { name: "Chiang Rai", type: "city" as const, province: "Chiang Rai" },
+  { name: "Phuket", type: "city" as const, province: "Phuket" },
+  { name: "Pattaya", type: "city" as const, province: "Chonburi" },
+  { name: "Hua Hin", type: "city" as const, province: "Prachuap Khiri Khan" },
+  { name: "Koh Samui", type: "city" as const, province: "Surat Thani" },
+  { name: "Rayong", type: "city" as const, province: "Rayong" },
+  { name: "Nakhon Ratchasima", type: "city" as const, province: "Nakhon Ratchasima" },
+  { name: "Hat Yai", type: "city" as const, province: "Songkhla" },
+  
+  // Bangkok Districts (Priority 2)
   { name: "Sukhumvit, Bangkok", type: "district" as const, province: "Bangkok" },
   { name: "Silom, Bangkok", type: "district" as const, province: "Bangkok" },
   { name: "Sathorn, Bangkok", type: "district" as const, province: "Bangkok" },
@@ -32,16 +44,6 @@ export const THAILAND_LOCATIONS: LocationSuggestion[] = [
   { name: "Bang Na, Bangkok", type: "district" as const, province: "Bangkok" },
   { name: "Suan Luang, Bangkok", type: "district" as const, province: "Bangkok" },
   { name: "Prawet, Bangkok", type: "district" as const, province: "Bangkok" },
-  
-  // Major Cities
-  { name: "Chiang Mai", type: "city" as const, province: "Chiang Mai" },
-  { name: "Phuket", type: "city" as const, province: "Phuket" },
-  { name: "Pattaya", type: "city" as const, province: "Chonburi" },
-  { name: "Hua Hin", type: "city" as const, province: "Prachuap Khiri Khan" },
-  { name: "Koh Samui", type: "city" as const, province: "Surat Thani" },
-  { name: "Rayong", type: "city" as const, province: "Rayong" },
-  { name: "Nakhon Ratchasima", type: "city" as const, province: "Nakhon Ratchasima" },
-  { name: "Hat Yai", type: "city" as const, province: "Songkhla" },
   
   // BTS/MRT Station Areas
   { name: "Nana, Bangkok", type: "station" as const, province: "Bangkok" },
@@ -69,14 +71,34 @@ export interface LocationSuggestion {
 }
 
 export const searchLocationSuggestions = (query: string): LocationSuggestion[] => {
-  if (!query || query.length < 2) return [];
+  // If no query or very short query, show major regions first
+  if (!query || query.length < 2) {
+    return THAILAND_LOCATIONS.filter(location => location.type === 'city').slice(0, 8);
+  }
   
   const normalizedQuery = query.toLowerCase().trim();
   
-  return THAILAND_LOCATIONS.filter(location => 
+  // Filter matching locations
+  const matches = THAILAND_LOCATIONS.filter(location => 
     location.name.toLowerCase().includes(normalizedQuery) ||
     location.province.toLowerCase().includes(normalizedQuery)
-  ).slice(0, 8); // Limit to 8 suggestions
+  );
+  
+  // Sort by priority: cities first, then districts, then stations
+  const prioritized = matches.sort((a, b) => {
+    const typeOrder = { city: 0, district: 1, station: 2 };
+    const aPriority = typeOrder[a.type];
+    const bPriority = typeOrder[b.type];
+    
+    if (aPriority !== bPriority) {
+      return aPriority - bPriority;
+    }
+    
+    // If same type, sort alphabetically
+    return a.name.localeCompare(b.name);
+  });
+  
+  return prioritized.slice(0, 8); // Limit to 8 suggestions
 };
 
 // Get user's current location (Bangkok as fallback for Thailand)

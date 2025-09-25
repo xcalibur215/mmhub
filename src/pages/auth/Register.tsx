@@ -8,12 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Home, Eye, EyeOff, User, Building, Users } from "lucide-react";
-import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/context/AuthContext";
+import EmailVerification from "@/components/EmailVerification";
 
 const Register = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { signup } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -26,6 +28,39 @@ const Register = () => {
     agreedToTerms: false,
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [showEmailVerification, setShowEmailVerification] = useState(false);
+  const [emailError, setEmailError] = useState("");
+
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const commonDomains = ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'example.com'];
+    
+    if (!emailRegex.test(email)) {
+      return "Please enter a valid email address";
+    }
+    
+    // Check for disposable email domains (basic check)
+    const disposableDomains = ['10minutemail.com', 'tempmail.org', 'guerrillamail.com'];
+    const domain = email.split('@')[1]?.toLowerCase();
+    
+    if (disposableDomains.includes(domain)) {
+      return "Temporary email addresses are not allowed";
+    }
+    
+    return "";
+  };
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const email = e.target.value;
+    setFormData({ ...formData, email });
+    
+    if (email) {
+      const error = validateEmail(email);
+      setEmailError(error);
+    } else {
+      setEmailError("");
+    }
+  };
 
   const roleOptions = [
     { value: "renter", label: "Renter", description: "Looking for a place to rent", icon: User },
@@ -36,6 +71,15 @@ const Register = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+
+    // Validate email before submission
+    const emailValidationError = validateEmail(formData.email);
+    if (emailValidationError) {
+      setEmailError(emailValidationError);
+      toast({ title: "Invalid email", description: emailValidationError, variant: "destructive" });
+      setIsLoading(false);
+      return;
+    }
 
     if (formData.password !== formData.confirmPassword) {
       toast({ title: "Password mismatch", description: "Please make sure your passwords match.", variant: "destructive" });
@@ -50,30 +94,42 @@ const Register = () => {
     }
 
     try {
-      if (!supabase) {
-        throw new Error('Supabase is not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
-      }
-      const username = formData.email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '').slice(0, 20) || 'user';
+      const { ok, error, session, needsVerification } = await signup(
+        formData.email,
+        formData.password,
+        {
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          role: formData.role || 'renter'
+        }
+      );
 
-      const { error } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          data: {
-            username: username,
-            first_name: formData.firstName,
-            last_name: formData.lastName,
-            role: formData.role || 'renter',
-          },
-        },
-      });
-
-      if (error) {
-        throw error;
+      if (!ok) {
+        throw error || new Error('Registration failed');
       }
 
-      toast({ title: 'Account created successfully!', description: 'Welcome to RentHub. Please check your email for verification.' });
-      navigate('/dashboard');
+      // Check if email verification is required
+      if (needsVerification) {
+        toast({ 
+          title: 'Account created!', 
+          description: 'Please check your email for verification.' 
+        });
+        setShowEmailVerification(true);
+      } else if (session) {
+        // User is immediately signed in
+        toast({ 
+          title: 'Welcome to RentHub!', 
+          description: 'Account created successfully! Redirecting to your dashboard...' 
+        });
+        navigate('/dashboard');
+      } else {
+        // Fallback
+        toast({ 
+          title: 'Account created!', 
+          description: 'Please sign in with your new account.' 
+        });
+        navigate('/auth/login');
+      }
 
     } catch (error) {
       toast({
@@ -107,6 +163,13 @@ const Register = () => {
           <p className="text-muted-foreground mt-2">Start your rental journey today</p>
         </div>
 
+        {/* Show email verification if needed */}
+        {showEmailVerification ? (
+          <EmailVerification 
+            email={formData.email}
+            onVerificationComplete={() => navigate('/auth/login')}
+          />
+        ) : (
         <Card className="shadow-elegant">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">Create Account</CardTitle>
@@ -153,12 +216,15 @@ const Register = () => {
                   id="email"
                   name="email"
                   type="email"
-                  placeholder="john.doe@example.com"
+                  placeholder="your.email@gmail.com"
                   value={formData.email}
-                  onChange={handleInputChange}
+                  onChange={handleEmailChange}
                   required
-                  className="h-11"
+                  className={`h-11 ${emailError ? 'border-red-500' : ''}`}
                 />
+                {emailError && (
+                  <p className="text-sm text-red-500 mt-1">{emailError}</p>
+                )}
               </div>
 
               {/* Role Selection */}
@@ -325,6 +391,7 @@ const Register = () => {
             </div>
           </CardContent>
         </Card>
+        )}
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import StatsOverview from "@/components/dashboard/StatsOverview";
 import { useCurrency } from "@/utils/currency";
-import { mockStats, mockActivities, roleQuickActions } from "@/data/mockData";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
 import { 
   Home, 
   Plus, 
@@ -22,56 +23,41 @@ import {
 
 const Dashboard = () => {
   const { formatPrice } = useCurrency();
-  
-  // Mock user data - using comprehensive data from mockData
-  const [user] = useState({
-    name: "John Doe",
-    email: "john.doe@example.com",
-    role: "renter" as 'renter' | 'landlord' | 'agent', // renter, landlord, agent
-  });
+  const { user, profile } = useAuth();
+  const [stats, setStats] = useState<any>(null);
+  const [activities, setActivities] = useState<any[]>([]);
+  const [quickActions, setQuickActions] = useState<any[]>([]);
 
-  // Use comprehensive stats from mockData
-  const stats = mockStats;
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!user || !profile) return;
 
-  // Use role-specific quick actions from mockData
-  const quickActions = roleQuickActions;
+      // Fetch stats
+      const { data: statsData, error: statsError } = await supabase
+        .from('stats')
+        .select('*')
+        .eq('role', profile.role);
+      if (statsError) console.error('Error fetching stats:', statsError);
+      else setStats(statsData);
 
-  // Use mock activities
-  const recentActivity = mockActivities;
+      // Fetch activities
+      const { data: activitiesData, error: activitiesError } = await supabase
+        .from('activities')
+        .select('*');
+      if (activitiesError) console.error('Error fetching activities:', activitiesError);
+      else setActivities(activitiesData);
 
-  const getRoleSpecificStats = () => {    
-    switch (user.role) {
-      case 'renter': {
-        const roleStats = stats.renter;
-        return [
-          { label: "Favorite Properties", value: roleStats.favoriteProperties, icon: Heart },
-          { label: "Active Rentals", value: roleStats.activeRentals, icon: Home },
-          { label: "Rental Applications", value: roleStats.rentalApplications, icon: FileText },
-          { label: "Unread Messages", value: roleStats.messages, icon: MessageCircle },
-        ];
-      }
-      case 'landlord': {
-        const roleStats = stats.landlord;
-        return [
-          { label: "Active Listings", value: roleStats.activeListings, icon: Building },
-          { label: "New Inquiries", value: roleStats.totalInquiries, icon: MessageCircle },
-          { label: "Active Leases", value: roleStats.activeLeases, icon: FileText },
-          { label: "Monthly Revenue", value: formatPrice(roleStats.monthlyRevenue), icon: BarChart3 },
-        ];
-      }
-      case 'agent': {
-        const roleStats = stats.agent;
-        return [
-          { label: "Managed Properties", value: roleStats.managedProperties, icon: Building },
-          { label: "Active Clients", value: roleStats.activeClients, icon: Users },
-          { label: "Monthly Commissions", value: formatPrice(roleStats.monthlyCommissions), icon: BarChart3 },
-          { label: "Response Rate", value: `${roleStats.responseRate}%`, icon: MessageCircle },
-        ];
-      }
-      default:
-        return [];
-    }
-  };
+      // Fetch quick actions
+      const { data: quickActionsData, error: quickActionsError } = await supabase
+        .from('quick_actions')
+        .select('*')
+        .eq('role', profile.role);
+      if (quickActionsError) console.error('Error fetching quick actions:', quickActionsError);
+      else setQuickActions(quickActionsData);
+    };
+
+    fetchData();
+  }, [user, profile]);
 
   const capitalizeRole = (role: string) => {
     return role.charAt(0).toUpperCase() + role.slice(1);
@@ -84,13 +70,13 @@ const Dashboard = () => {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-foreground mb-2">
-              Welcome back, {user.name}
+              Welcome back, {profile?.username || user?.email}
             </h1>
             <div className="flex items-center space-x-2">
               <Badge variant="secondary">
-                {capitalizeRole(user.role)}
+                {capitalizeRole(profile?.role || 'user')}
               </Badge>
-              <span className="text-muted-foreground">{user.email}</span>
+              <span className="text-muted-foreground">{user?.email}</span>
             </div>
           </div>
           <Button variant="outline" size="sm" asChild>
@@ -102,7 +88,7 @@ const Dashboard = () => {
         </div>
 
         {/* Stats Overview */}
-        <StatsOverview userRole={user.role as 'renter' | 'landlord' | 'agent'} />
+        <StatsOverview userRole={profile?.role as 'renter' | 'landlord' | 'agent'} />
 
         {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -111,11 +97,11 @@ const Dashboard = () => {
             <CardHeader>
               <CardTitle>Quick Actions</CardTitle>
               <CardDescription>
-                Common tasks for {user.role}s
+                Common tasks for {profile?.role}s
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              {quickActions[user.role].map((action, index) => (
+              {quickActions.map((action, index) => (
                 <Button
                   key={index}
                   variant="ghost"
@@ -141,7 +127,7 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {recentActivity.map((activity) => (
+                {activities.map((activity) => (
                   <div key={activity.id} className="flex items-start space-x-4 p-4 border border-border rounded-lg hover:bg-accent/50 transition-colors">
                     <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center">
                       <span className="text-lg">📝</span>

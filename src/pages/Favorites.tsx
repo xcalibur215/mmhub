@@ -6,7 +6,6 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import PropertyCard, { PropertyCardProps } from "@/components/Property/PropertyCard";
-import { mockProperties } from "@/data/mockData";
 
 const Favorites = () => {
   const [favorites, setFavorites] = useState<PropertyCardProps[]>([]);
@@ -21,22 +20,6 @@ const Favorites = () => {
       }
 
       if (!supabase) {
-        // Use mock data if Supabase not configured
-        const mockFavorites: PropertyCardProps[] = mockProperties.slice(0, 3).map(property => ({
-          id: property.id,
-          title: property.title,
-          monthlyRent: property.monthly_rent,
-          securityDeposit: property.security_deposit,
-          bedrooms: property.bedrooms,
-          bathrooms: property.bathrooms,
-          squareFeet: property.square_feet,
-          location: property.location,
-          imageUrl: property.image_url,
-          propertyType: property.property_type,
-          listedAt: property.created_at,
-          isFavorited: true
-        }));
-        setFavorites(mockFavorites);
         setLoading(false);
         return;
       }
@@ -85,7 +68,7 @@ const Favorites = () => {
           .map(item => {
             const property = item.properties as any;
             return {
-              id: property.id,
+              id: String(property.id), // Ensure id is always a string
               title: property.title,
               monthlyRent: property.monthly_rent || 0,
               securityDeposit: property.security_deposit,
@@ -100,38 +83,9 @@ const Favorites = () => {
             };
           }) || [];
 
-        setFavorites(transformedFavorites.length > 0 ? transformedFavorites : mockProperties.slice(0, 3).map(property => ({
-          id: property.id,
-          title: property.title,
-          monthlyRent: property.monthly_rent,
-          securityDeposit: property.security_deposit,
-          bedrooms: property.bedrooms,
-          bathrooms: property.bathrooms,
-          squareFeet: property.square_feet,
-          location: property.location,
-          imageUrl: property.image_url,
-          propertyType: property.property_type,
-          listedAt: property.created_at,
-          isFavorited: true
-        })));
+        setFavorites(transformedFavorites);
       } catch (error) {
         console.error('Error fetching favorites:', error);
-        // Fallback to mock data on error
-        const mockFavorites: PropertyCardProps[] = mockProperties.slice(0, 3).map(property => ({
-          id: property.id,
-          title: property.title,
-          monthlyRent: property.monthly_rent,
-          securityDeposit: property.security_deposit,
-          bedrooms: property.bedrooms,
-          bathrooms: property.bathrooms,
-          squareFeet: property.square_feet,
-          location: property.location,
-          imageUrl: property.image_url,
-          propertyType: property.property_type,
-          listedAt: property.created_at,
-          isFavorited: true
-        }));
-        setFavorites(mockFavorites);
       } finally {
         setLoading(false);
       }

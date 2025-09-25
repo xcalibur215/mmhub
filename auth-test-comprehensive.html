@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MMHub Auth System Test</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .success {
+            color: #28a745;
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .error {
+            color: #dc3545;
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .info {
+            color: #0c5460;
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .json-display {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #e9ecef;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        .test-results {
+            margin-top: 20px;
+        }
+        .step {
+            margin: 10px 0;
+            padding: 10px;
+            border-left: 4px solid #007bff;
+            background: #f8f9fa;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 2s linear infinite;
+            margin-right: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <h1>🔐 MMHub Authentication System Test</h1>
+    
+    <div class="container">
+        <h2>Connection Status</h2>
+        <div id="connectionStatus"></div>
+    </div>
+
+    <div class="container">
+        <h2>📝 User Registration Test</h2>
+        <div class="form-group">
+            <label for="regEmail">Email (use Gmail/Outlook for testing):</label>
+            <input type="email" id="regEmail" value="testuser@gmail.com" placeholder="Enter valid email (avoid @example.com)">
+        </div>
+        <div class="form-group">
+            <label for="regPassword">Password:</label>
+            <input type="password" id="regPassword" value="password123" placeholder="Enter password">
+        </div>
+        <div class="form-group">
+            <label for="firstName">First Name:</label>
+            <input type="text" id="firstName" value="Test" placeholder="Enter first name">
+        </div>
+        <div class="form-group">
+            <label for="lastName">Last Name:</label>
+            <input type="text" id="lastName" value="User" placeholder="Enter last name">
+        </div>
+        <button onclick="testRegistration()">Register User</button>
+        <div id="registrationResult"></div>
+    </div>
+
+    <div class="container">
+        <h2>🔑 User Login Test</h2>
+        <div class="form-group">
+            <label for="loginEmail">Email:</label>
+            <input type="email" id="loginEmail" value="testuser@gmail.com" placeholder="Enter email">
+        </div>
+        <div class="form-group">
+            <label for="loginPassword">Password:</label>
+            <input type="password" id="loginPassword" value="password123" placeholder="Enter password">
+        </div>
+        <button onclick="testLogin()">Login</button>
+        <button onclick="testLogout()">Logout</button>
+        <div id="loginResult"></div>
+    </div>
+
+    <div class="container">
+        <h2>👤 Profile Management Test</h2>
+        <button onclick="testGetProfile()">Get Current Profile</button>
+        <button onclick="testCreateProfile()">Create Profile</button>
+        <button onclick="testUpdateProfile()">Update Profile</button>
+        <div id="profileResult"></div>
+    </div>
+
+    <div class="container">
+        <h2>🏠 Database Tables Test</h2>
+        <button onclick="testDatabaseTables()">Test All Tables</button>
+        <div id="databaseResult"></div>
+    </div>
+
+    <div class="container">
+        <h2>🚀 Complete Authentication Flow Test</h2>
+        <button onclick="runCompleteTest()">Run Full Test Suite</button>
+        <div id="completeTestResult"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://wkjshlcwstzxvxnvowby.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndranNobGN3c3R6eHZ4bnZvd2J5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg3MTE4NjQsImV4cCI6MjA3NDI4Nzg2NH0.n3rLz6DmhD8rhcZQhWkvxkdm2N6qj31zIGYNHWPLzCo';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        function showStatus(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="${type}">${message}</div>`;
+        }
+
+        function showLoading(elementId, message) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="info"><span class="loading"></span>${message}</div>`;
+        }
+
+        // Check connection status
+        async function checkConnection() {
+            try {
+                showLoading('connectionStatus', 'Testing connection...');
+                const { data, error } = await supabase.from('profiles').select('count').limit(1);
+                if (error) throw error;
+                showStatus('connectionStatus', '✅ Connected to Supabase successfully!', 'success');
+            } catch (error) {
+                showStatus('connectionStatus', `❌ Connection failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Test user registration
+        async function testRegistration() {
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPassword').value;
+            const firstName = document.getElementById('firstName').value;
+            const lastName = document.getElementById('lastName').value;
+
+            if (!email || !password) {
+                showStatus('registrationResult', 'Please enter both email and password', 'error');
+                return;
+            }
+
+            try {
+                showLoading('registrationResult', 'Registering user...');
+                
+                const { data, error } = await supabase.auth.signUp({
+                    email: email,
+                    password: password,
+                    options: {
+                        data: {
+                            first_name: firstName,
+                            last_name: lastName,
+                            role: 'renter'
+                        }
+                    }
+                });
+
+                if (error) throw error;
+
+                let result = `✅ Registration successful!\n`;
+                result += `User ID: ${data.user?.id}\n`;
+                result += `Email: ${data.user?.email}\n`;
+                
+                if (data.session) {
+                    result += `Session created: Yes\n`;
+                    result += `Access token: ${data.session.access_token.substring(0, 50)}...\n`;
+                } else {
+                    result += `Session created: No (email verification may be required)\n`;
+                }
+
+                showStatus('registrationResult', `<pre>${result}</pre>`, 'success');
+                
+                // Auto-populate login fields
+                document.getElementById('loginEmail').value = email;
+                document.getElementById('loginPassword').value = password;
+                
+            } catch (error) {
+                showStatus('registrationResult', `❌ Registration failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Test user login
+        async function testLogin() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            if (!email || !password) {
+                showStatus('loginResult', 'Please enter both email and password', 'error');
+                return;
+            }
+
+            try {
+                showLoading('loginResult', 'Logging in...');
+                
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+
+                if (error) throw error;
+
+                let result = `✅ Login successful!\n`;
+                result += `User ID: ${data.user?.id}\n`;
+                result += `Email: ${data.user?.email}\n`;
+                result += `Email confirmed: ${data.user?.email_confirmed_at ? 'Yes' : 'No'}\n`;
+                result += `Last sign in: ${data.user?.last_sign_in_at}\n`;
+                result += `Session expires: ${data.session?.expires_at}\n`;
+
+                showStatus('loginResult', `<pre>${result}</pre>`, 'success');
+                
+            } catch (error) {
+                showStatus('loginResult', `❌ Login failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Test logout
+        async function testLogout() {
+            try {
+                showLoading('loginResult', 'Logging out...');
+                const { error } = await supabase.auth.signOut();
+                if (error) throw error;
+                showStatus('loginResult', '✅ Logged out successfully!', 'success');
+            } catch (error) {
+                showStatus('loginResult', `❌ Logout failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Test getting current profile
+        async function testGetProfile() {
+            try {
+                showLoading('profileResult', 'Getting current profile...');
+                
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session?.user) {
+                    showStatus('profileResult', 'No user logged in. Please login first.', 'error');
+                    return;
+                }
+
+                const { data, error } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', session.user.id)
+                    .single();
+
+                if (error) {
+                    if (error.code === 'PGRST116') {
+                        showStatus('profileResult', '❌ Profile not found. You may need to create one.', 'error');
+                    } else {
+                        throw error;
+                    }
+                    return;
+                }
+
+                const result = `✅ Profile found!\n${JSON.stringify(data, null, 2)}`;
+                showStatus('profileResult', `<pre>${result}</pre>`, 'success');
+                
+            } catch (error) {
+                showStatus('profileResult', `❌ Failed to get profile: ${error.message}`, 'error');
+            }
+        }
+
+        // Test creating profile
+        async function testCreateProfile() {
+            try {
+                showLoading('profileResult', 'Creating profile...');
+                
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session?.user) {
+                    showStatus('profileResult', 'No user logged in. Please login first.', 'error');
+                    return;
+                }
+
+                const newProfile = {
+                    id: session.user.id,
+                    username: session.user.email?.split('@')[0] || 'user',
+                    first_name: session.user.user_metadata?.first_name || 'Test',
+                    last_name: session.user.user_metadata?.last_name || 'User',
+                    role: 'renter',
+                    user_type: 'renter',
+                    phone: null,
+                    address: null,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                };
+
+                const { data, error } = await supabase
+                    .from('profiles')
+                    .insert([newProfile])
+                    .select()
+                    .single();
+
+                if (error) throw error;
+
+                const result = `✅ Profile created successfully!\n${JSON.stringify(data, null, 2)}`;
+                showStatus('profileResult', `<pre>${result}</pre>`, 'success');
+                
+            } catch (error) {
+                showStatus('profileResult', `❌ Failed to create profile: ${error.message}`, 'error');
+            }
+        }
+
+        // Test updating profile
+        async function testUpdateProfile() {
+            try {
+                showLoading('profileResult', 'Updating profile...');
+                
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session?.user) {
+                    showStatus('profileResult', 'No user logged in. Please login first.', 'error');
+                    return;
+                }
+
+                const updates = {
+                    first_name: 'Updated',
+                    last_name: 'Name',
+                    phone: '+1234567890',
+                    address: '123 Test Street, Test City',
+                    updated_at: new Date().toISOString()
+                };
+
+                const { data, error } = await supabase
+                    .from('profiles')
+                    .update(updates)
+                    .eq('id', session.user.id)
+                    .select()
+                    .single();
+
+                if (error) throw error;
+
+                const result = `✅ Profile updated successfully!\n${JSON.stringify(data, null, 2)}`;
+                showStatus('profileResult', `<pre>${result}</pre>`, 'success');
+                
+            } catch (error) {
+                showStatus('profileResult', `❌ Failed to update profile: ${error.message}`, 'error');
+            }
+        }
+
+        // Test database tables
+        async function testDatabaseTables() {
+            showLoading('databaseResult', 'Testing database tables...');
+            
+            const tables = ['profiles', 'properties', 'bookings', 'reviews', 'favorites', 'messages'];
+            let results = '📊 Database Table Tests:\n\n';
+
+            for (const table of tables) {
+                try {
+                    const { data, error, count } = await supabase
+                        .from(table)
+                        .select('*', { count: 'exact' })
+                        .limit(1);
+                    
+                    if (error) {
+                        results += `❌ ${table}: ${error.message}\n`;
+                    } else {
+                        results += `✅ ${table}: Accessible (${count || 0} records)\n`;
+                    }
+                } catch (err) {
+                    results += `❌ ${table}: ${err.message}\n`;
+                }
+            }
+
+            showStatus('databaseResult', `<pre>${results}</pre>`, 'info');
+        }
+
+        // Run complete test suite
+        async function runCompleteTest() {
+            showLoading('completeTestResult', 'Running complete test suite...');
+            
+            let results = '🧪 Complete Authentication Test Results:\n\n';
+            const testEmail = `test${Date.now()}@mmhub.com`;
+            const testPassword = 'password123';
+            
+            try {
+                // Step 1: Test Registration
+                results += '1. Testing Registration...\n';
+                const { data: regData, error: regError } = await supabase.auth.signUp({
+                    email: testEmail,
+                    password: testPassword,
+                    options: {
+                        data: {
+                            first_name: 'Test',
+                            last_name: 'User',
+                            role: 'renter'
+                        }
+                    }
+                });
+
+                if (regError) {
+                    results += `   ❌ Registration failed: ${regError.message}\n\n`;
+                } else {
+                    results += `   ✅ Registration successful\n`;
+                    results += `   User ID: ${regData.user?.id}\n`;
+                    results += `   Session created: ${regData.session ? 'Yes' : 'No'}\n\n`;
+                }
+
+                // Step 2: Test Login (if registration didn't create session)
+                if (!regData.session) {
+                    results += '2. Testing Login...\n';
+                    const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+                        email: testEmail,
+                        password: testPassword
+                    });
+
+                    if (loginError) {
+                        results += `   ❌ Login failed: ${loginError.message}\n\n`;
+                    } else {
+                        results += `   ✅ Login successful\n`;
+                        results += `   Session created: ${loginData.session ? 'Yes' : 'No'}\n\n`;
+                    }
+                }
+
+                // Step 3: Test Profile Creation
+                results += '3. Testing Profile Creation...\n';
+                const { data: { session } } = await supabase.auth.getSession();
+                
+                if (session?.user) {
+                    const profileData = {
+                        id: session.user.id,
+                        username: session.user.email?.split('@')[0] || 'testuser',
+                        first_name: 'Test',
+                        last_name: 'User',
+                        role: 'renter',
+                        user_type: 'renter'
+                    };
+
+                    const { data: profile, error: profileError } = await supabase
+                        .from('profiles')
+                        .insert([profileData])
+                        .select()
+                        .single();
+
+                    if (profileError) {
+                        results += `   ❌ Profile creation failed: ${profileError.message}\n\n`;
+                    } else {
+                        results += `   ✅ Profile created successfully\n`;
+                        results += `   Username: ${profile.username}\n\n`;
+                    }
+                } else {
+                    results += '   ❌ No active session for profile creation\n\n';
+                }
+
+                // Step 4: Test Logout
+                results += '4. Testing Logout...\n';
+                const { error: logoutError } = await supabase.auth.signOut();
+                
+                if (logoutError) {
+                    results += `   ❌ Logout failed: ${logoutError.message}\n\n`;
+                } else {
+                    results += `   ✅ Logout successful\n\n`;
+                }
+
+                results += '🎉 Test suite completed!\n';
+                showStatus('completeTestResult', `<pre>${results}</pre>`, 'success');
+
+            } catch (error) {
+                results += `\n❌ Test suite failed: ${error.message}\n`;
+                showStatus('completeTestResult', `<pre>${results}</pre>`, 'error');
+            }
+        }
+
+        // Initialize connection test on page load
+        window.onload = function() {
+            checkConnection();
+        };
+    </script>
+</body>
+</html>
