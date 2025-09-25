@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import StatsOverview from "@/components/dashboard/StatsOverview";
 import { useCurrency } from "@/utils/currency";
+import { mockStats, mockActivities, roleQuickActions } from "@/data/mockData";
 import { 
   Home, 
   Plus, 
@@ -22,81 +23,21 @@ import {
 const Dashboard = () => {
   const { formatPrice } = useCurrency();
   
-  // Mock user data - in real app this would come from auth context
+  // Mock user data - using comprehensive data from mockData
   const [user] = useState({
     name: "John Doe",
     email: "john.doe@example.com",
-    role: "renter", // renter, landlord, agent
+    role: "renter" as 'renter' | 'landlord' | 'agent', // renter, landlord, agent
   });
 
-  const stats = {
-    renter: {
-      favoriteProperties: 12,
-      activeRentals: 1,
-      rentalApplications: 3,
-      messages: 5,
-    },
-    landlord: {
-      activeListings: 8,
-      totalInquiries: 23,
-      activeLeases: 15,
-      monthlyRevenue: 45000,
-    },
-    agent: {
-      managedProperties: 32,
-      activeClients: 18,
-      monthlyCommissions: 28500,
-      responseRate: 94,
-    }
-  };
+  // Use comprehensive stats from mockData
+  const stats = mockStats;
 
-  const quickActions = {
-    renter: [
-      { icon: Home, label: "Browse Properties", href: "/listings" },
-      { icon: Heart, label: "My Favorites", href: "/favorites" },
-      { icon: MessageCircle, label: "Messages", href: "/messages" },
-      { icon: FileText, label: "Rental Applications", href: "/applications" },
-    ],
-    landlord: [
-      { icon: Plus, label: "Add Property", href: "/properties/new" },
-      { icon: Building, label: "My Properties", href: "/properties" },
-      { icon: Users, label: "Tenants", href: "/tenants" },
-      { icon: BarChart3, label: "Analytics", href: "/analytics" },
-    ],
-    agent: [
-      { icon: Building, label: "Managed Properties", href: "/properties" },
-      { icon: Users, label: "Clients", href: "/clients" },
-      { icon: MessageCircle, label: "Communications", href: "/messages" },
-      { icon: Calendar, label: "Schedule", href: "/schedule" },
-    ]
-  };
+  // Use role-specific quick actions from mockData
+  const quickActions = roleQuickActions;
 
-  const recentActivity = [
-    {
-      id: 1,
-      type: "message",
-      title: "New message from Sarah Johnson",
-      description: "Regarding the downtown apartment listing",
-      time: "2 hours ago",
-      icon: MessageCircle,
-    },
-    {
-      id: 2,
-      type: "favorite",
-      title: "Property saved to favorites",
-      description: "Modern loft in Capitol Hill",
-      time: "1 day ago",
-      icon: Heart,
-    },
-    {
-      id: 3,
-      type: "view",
-      title: "Property viewed",
-      description: "Spacious family home in Bellevue",
-      time: "2 days ago",
-      icon: Home,
-    },
-  ];
+  // Use mock activities
+  const recentActivity = mockActivities;
 
   const getRoleSpecificStats = () => {    
     switch (user.role) {
@@ -174,7 +115,7 @@ const Dashboard = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              {quickActions[user.role as keyof typeof quickActions].map((action, index) => (
+              {quickActions[user.role].map((action, index) => (
                 <Button
                   key={index}
                   variant="ghost"
@@ -182,7 +123,7 @@ const Dashboard = () => {
                   asChild
                 >
                   <Link to={action.href}>
-                    <action.icon className="w-5 h-5 mr-3" />
+                    <span className="w-5 h-5 mr-3">📍</span>
                     <span>{action.label}</span>
                   </Link>
                 </Button>
@@ -203,7 +144,7 @@ const Dashboard = () => {
                 {recentActivity.map((activity) => (
                   <div key={activity.id} className="flex items-start space-x-4 p-4 border border-border rounded-lg hover:bg-accent/50 transition-colors">
                     <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center">
-                      <activity.icon className="w-5 h-5 text-muted-foreground" />
+                      <span className="text-lg">📝</span>
                     </div>
                     <div className="flex-1 min-w-0">
                       <h4 className="text-sm font-medium text-foreground mb-1">

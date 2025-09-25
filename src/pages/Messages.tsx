@@ -46,19 +46,6 @@ const Messages = () => {
   const [loading, setLoading] = useState(true);
 
   // Fetch threads for current user
-  useEffect(() => {
-    if (!user) return;
-    
-    fetchThreads();
-  }, [user, fetchThreads]);
-
-  // Fetch messages for selected thread
-  useEffect(() => {
-    if (!selectedThread) return;
-    
-    fetchMessages(selectedThread);
-  }, [selectedThread, fetchMessages]);
-
   const fetchThreads = useCallback(async () => {
     try {
       if (!supabase || !user) {
@@ -117,7 +104,7 @@ const Messages = () => {
       if (error) throw error;
 
       // Map joined properties.title into property_title for UI usage
-      const mapped = (data || []).map((t: Omit<Thread, 'property_title' | 'messages'> & { properties: { title: string } | null; }) => ({
+      const mapped = (data || []).map((t: any) => ({
         ...t,
         property_title: t.property_title ?? t.properties?.title ?? '',
       }));
@@ -191,6 +178,19 @@ const Messages = () => {
       setMessages([]);
     }
   }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    
+    fetchThreads();
+  }, [user, fetchThreads]);
+
+  // Fetch messages for selected thread
+  useEffect(() => {
+    if (!selectedThread) return;
+    
+    fetchMessages(selectedThread);
+  }, [selectedThread, fetchMessages]);
 
   const sendMessage = async () => {
     if (!messageInput.trim() || !selectedThread || !user) return;

@@ -21,6 +21,88 @@ interface Property {
   image_url?: string;
 }
 
+// Comprehensive dummy data for different property types and price ranges
+const dummyProperties: Property[] = [
+  {
+    id: '1',
+    title: 'Luxury Downtown Condo',
+    monthly_rent: 2500,
+    security_deposit: 2500,
+    bedrooms: 2,
+    bathrooms: 2,
+    square_feet: 1200,
+    location: 'Downtown Bangkok, Thailand',
+    property_type: 'Condo',
+    created_at: '2024-01-15T10:00:00Z',
+    image_url: '/placeholder.svg'
+  },
+  {
+    id: '2',
+    title: 'Cozy Studio Near BTS',
+    monthly_rent: 800,
+    security_deposit: 800,
+    bedrooms: 0,
+    bathrooms: 1,
+    square_feet: 500,
+    location: 'Sukhumvit, Bangkok, Thailand',
+    property_type: 'Studio',
+    created_at: '2024-01-14T15:30:00Z',
+    image_url: '/placeholder.svg'
+  },
+  {
+    id: '3',
+    title: 'Family House with Garden',
+    monthly_rent: 1800,
+    security_deposit: 3600,
+    bedrooms: 4,
+    bathrooms: 3,
+    square_feet: 2200,
+    location: 'Thonglor, Bangkok, Thailand',
+    property_type: 'House',
+    created_at: '2024-01-13T09:15:00Z',
+    image_url: '/placeholder.svg'
+  },
+  {
+    id: '4',
+    title: 'Modern Apartment Complex',
+    monthly_rent: 1200,
+    security_deposit: 1200,
+    bedrooms: 1,
+    bathrooms: 1,
+    square_feet: 700,
+    location: 'Chatuchak, Bangkok, Thailand',
+    property_type: 'Apartment',
+    created_at: '2024-01-12T14:20:00Z',
+    image_url: '/placeholder.svg'
+  },
+  {
+    id: '5',
+    title: 'Penthouse with City View',
+    monthly_rent: 4500,
+    security_deposit: 9000,
+    bedrooms: 3,
+    bathrooms: 3,
+    square_feet: 2000,
+    location: 'Sathorn, Bangkok, Thailand',
+    property_type: 'Penthouse',
+    created_at: '2024-01-11T11:45:00Z',
+    image_url: '/placeholder.svg'
+  },
+  {
+    id: '6',
+    title: 'Budget-Friendly Shared Room',
+    monthly_rent: 400,
+    security_deposit: 400,
+    bedrooms: 1,
+    bathrooms: 1,
+    square_feet: 300,
+    location: 'Ramkhamhaeng, Bangkok, Thailand',
+    property_type: 'Shared Room',
+    created_at: '2024-01-10T08:30:00Z',
+    image_url: '/placeholder.svg'
+  }
+];
+
 const Index = () => {
   const [featuredProperties, setFeaturedProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,19 +112,28 @@ const Index = () => {
   useEffect(() => {
     const fetchFeaturedProperties = async () => {
       try {
+        if (!supabase) {
+          // If Supabase is not configured, use dummy data
+          setFeaturedProperties(dummyProperties.slice(0, 3));
+          setLoading(false);
+          return;
+        }
+
         const { data, error } = await supabase
           .from('properties')
           .select('*')
-          .eq('featured', true)
           .order('created_at', { ascending: false })
           .limit(3);
         
         if (error) {
           console.error('Error fetching featured properties:', error);
+          // Fallback to dummy data on error
+          setFeaturedProperties(dummyProperties.slice(0, 3));
+          setLoading(false);
           return;
         }
         
-        setFeaturedProperties(data || []);
+        setFeaturedProperties(data || dummyProperties.slice(0, 3));
         
         // Fetch user favorites if logged in
         if (user) {
@@ -57,6 +148,8 @@ const Index = () => {
         }
       } catch (error) {
         console.error('Error:', error);
+        // Fallback to dummy data on error
+        setFeaturedProperties(dummyProperties.slice(0, 3));
       } finally {
         setLoading(false);
       }
