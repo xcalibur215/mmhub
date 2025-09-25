@@ -49,17 +49,32 @@ echo "[start] Backend (FastAPI/Uvicorn)"
     echo "[backend] Activating root .venv"
     source "$ROOT_DIR/.venv/bin/activate"
   else
-    echo "[backend][warn] No virtualenv detected; using system python ($(which python3 || true))"
+    # Create a repo-level venv to avoid polluting system python
+    if command -v python3 >/dev/null 2>&1; then
+      echo "[backend] Creating repo virtualenv at $ROOT_DIR/.venv"
+      python3 -m venv "$ROOT_DIR/.venv"
+      source "$ROOT_DIR/.venv/bin/activate"
+    else
+      echo "[backend][warn] python3 not found; will attempt to use system python ($(which python || true))"
+    fi
   fi
 
   # Quick dependency sanity check
-  if ! python -c 'import fastapi, sqlalchemy, passlib' 2>/dev/null; then
+  PYTHON_BIN="${VIRTUAL_ENV:+$VIRTUAL_ENV/bin/python3}"
+  if [[ -z "$PYTHON_BIN" || ! -x "$PYTHON_BIN" ]]; then
+    PYTHON_BIN="$(command -v python3 || command -v python || echo python3)"
+  fi
+
+  # Ensure pip corresponds to the selected python
+  PIP_CMD="$PYTHON_BIN -m pip"
+
+  if ! $PYTHON_BIN -c 'import fastapi, uvicorn' 2>/dev/null; then
     echo "[backend] Installing dependencies from requirements.txt..."
-    pip install -q -r requirements.txt || {
+    $PIP_CMD install -q -r requirements.txt || {
       echo "[backend][error] Failed installing dependencies" >&2; exit 1; }
   fi
   echo "[backend] Starting Uvicorn (hot reload)"
-  exec uvicorn main:app --host 0.0.0.0 --port ${BACKEND_PORT} --reload
+  exec $PYTHON_BIN -m uvicorn main:app --host 0.0.0.0 --port ${BACKEND_PORT} --reload
 ) & BACKEND_PID=$!
 
 echo "[start] Frontend (${FRONTEND_MODE})"
