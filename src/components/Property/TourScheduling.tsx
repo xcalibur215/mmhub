@@ -60,7 +60,8 @@ const TourScheduling: React.FC<TourSchedulingProps> = ({
     setLoading(true);
 
     try {
-      const { error } = await supabase
+      // Create tour request first and get the ID
+      const { data: tourRequest, error } = await supabase
         .from('tour_requests')
         .insert([{
           property_id: propertyId,
@@ -73,19 +74,23 @@ const TourScheduling: React.FC<TourSchedulingProps> = ({
           requester_name: formData.requesterName,
           requester_phone: formData.requesterPhone,
           requester_email: formData.requesterEmail
-        }]);
+        }])
+        .select()
+        .single();
 
       if (error) throw error;
 
-      // Create notification for property owner
-      await supabase
-        .from('tour_notifications')
-        .insert([{
-          tour_request_id: null, // Will be updated after tour request is created
-          recipient_id: ownerId,
-          message: `New tour request for "${propertyTitle}" from ${formData.requesterName}`,
-          notification_type: 'tour_request'
-        }]);
+      // Create notification for property owner with proper tour_request_id linkage
+      if (tourRequest) {
+        await supabase
+          .from('tour_notifications')
+          .insert([{
+            tour_request_id: tourRequest.id,
+            recipient_id: ownerId,
+            message: `New tour request for "${propertyTitle}" from ${formData.requesterName}`,
+            notification_type: 'tour_request'
+          }]);
+      }
 
       toast({
         title: "Tour request sent!",

@@ -75,7 +75,7 @@ class GeolocationService {
 
       const options: PositionOptions = {
         enableHighAccuracy: true,
-        timeout: 15000,
+        timeout: 5000, // Reduced from 15s to 5s to prevent blocking
         maximumAge: 300000 // Cache for 5 minutes
       };
 
@@ -168,14 +168,19 @@ class GeolocationService {
    */
   private async reverseGeocodeNominatim(latitude: number, longitude: number) {
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
+      
       const response = await fetch(
         `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1&accept-language=en`,
         {
           headers: {
             'User-Agent': 'MMHub Property Search App'
-          }
+          },
+          signal: controller.signal
         }
       );
+      clearTimeout(timeoutId);
 
       if (!response.ok) throw new Error('Nominatim request failed');
 
@@ -210,9 +215,14 @@ class GeolocationService {
     }
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
+      
       const response = await fetch(
-        `https://api.opencagedata.com/geocode/v1/json?q=${latitude}+${longitude}&key=${apiKey}&language=en&pretty=1`
+        `https://api.opencagedata.com/geocode/v1/json?q=${latitude}+${longitude}&key=${apiKey}&language=en&pretty=1`,
+        { signal: controller.signal }
       );
+      clearTimeout(timeoutId);
 
       if (!response.ok) throw new Error('OpenCage request failed');
 
@@ -248,9 +258,14 @@ class GeolocationService {
     }
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
+      
       const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${apiKey}&language=en`
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${apiKey}&language=en`,
+        { signal: controller.signal }
       );
+      clearTimeout(timeoutId);
 
       if (!response.ok) throw new Error('MapBox request failed');
 
@@ -284,8 +299,14 @@ class GeolocationService {
    */
   async getLocationFromIP(): Promise<GeolocationResult> {
     try {
-      // Using ipapi.co service (free tier available)
-      const response = await fetch('https://ipapi.co/json/');
+      // Using ipapi.co service (free tier available) with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
+      
+      const response = await fetch('https://ipapi.co/json/', {
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
       
       if (!response.ok) throw new Error('IP location service failed');
 

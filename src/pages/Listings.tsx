@@ -90,7 +90,7 @@ const Listings = () => {
         // Fetch user favorites if logged in
         if (user) {
           const { data: favorites } = await supabase
-            .from('user_favorites')
+            .from('favorites')
             .select('property_id')
             .eq('user_id', user.id);
           
@@ -283,7 +283,7 @@ const Listings = () => {
     try {
       if (isFavorited) {
         const { error } = await supabase
-          .from('user_favorites')
+          .from('favorites')
           .delete()
           .eq('user_id', user.id)
           .eq('property_id', id);
@@ -291,7 +291,7 @@ const Listings = () => {
         if (error) throw error;
       } else {
         const { error } = await supabase
-          .from('user_favorites')
+          .from('favorites')
           .insert([{ user_id: user.id, property_id: id }]);
         
         if (error) throw error;

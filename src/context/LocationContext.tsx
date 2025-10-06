@@ -43,7 +43,11 @@ export const LocationProvider: React.FC<LocationProviderProps> = ({ children }) 
     const dismissed = localStorage.getItem('locationPromptDismissed');
     setLocationPromptDismissed(dismissed === 'true');
 
-    initializeLocation();
+    // Run initialization without blocking - fire and forget
+    initializeLocation().catch(err => {
+      console.warn('Location initialization failed:', err);
+      setIsLoading(false);
+    });
   }, []);
 
   const initializeLocation = async () => {
